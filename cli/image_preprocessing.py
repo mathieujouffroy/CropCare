@@ -192,26 +192,6 @@ def remove_whites(image, mask):
     return mask
 
 
-def remove_blacks(image, marker):
-    """
-    Remove pixels resembling black from marker as background
-    Args:
-        image:
-        marker: to be overloaded with black pixels to be removed
-    Returns:
-        nothing
-    """
-    # setup the black remover to process logical_and in place
-    black_remover = np.full((image.shape[0], image.shape[1]), True)
-    black_remover[image[:, :, 0] >= 30] = False  # blue channel
-    black_remover[image[:, :, 1] >= 30] = False  # green channel
-    black_remover[image[:, :, 2] >= 30] = False  # red channel
-    # remove blacks from marker
-    marker[black_remover] = False
-    plt.imshow(black_remover)
-    plt.show()
-
-
 def fill_object(rgb_img, final_mask):
     """
     Fills the object in the mask with white pixels.
@@ -246,11 +226,10 @@ def color_cast_removal(rgb_img, verbose=False):
     h_new = (h + 90) % 180
     # combine new hue with old sat and value
     hsv_new = cv2.merge([h_new, s, v])
-    # convert back to BGR
+    # convert back to RGB
     rgb_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2RGB)
     # Get the average color of rgb_new
     ave_color = cv2.mean(rgb_new)[0:3]
-    print(ave_color)
 
     # create a new image with the average color
     color_img = np.full_like(rgb_img, ave_color)
