@@ -1,0 +1,16 @@
+#/resources/*
+__pycache__/
+/*/*/__pycache__
+/**/__pycache__
+
+resources/*
+resources/Plant_leave_diseases_dataset_without_augmentation
+resources/Plant_leave_diseases_dataset_with_augmentation
+
+.DS_Store
+.env
+*.h5
+*.joblib
+*md
+*.ipynb
+*/*.h5
