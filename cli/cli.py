@@ -50,43 +50,6 @@ def get_split_sets(seed, class_type, images, labels):
     return [X_train, X_valid, X_test], label_split_lst
 
 
-def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
-    """
-    Stores an array of images to HDF5.
-
-    Args:
-    images(numpy.array):    images array, (N, 256, 256, 3) to be stored
-    healthy(numpy.array):   healthy/sick (labels) array, (N, 1) to be stored
-    plant(numpy.array):     plant (labels) array, (N, 1) to be stored
-    disease(numpy.array):   disease (labels) array, (N, 1) to be stored
-    gen_disease(numpy.array): general disease (labels) array, (N, 1) to be stored
-    """
-
-    # Create a new HDF5 file
-    file = h5py.File(name, "w")
-    print(f"Train Images:     {np.shape(train_x)}  -- dtype: {train_x.dtype}")
-    print(f"Train Labels:    {np.shape(train_y)} -- dtype: {train_y.dtype}")
-
-    # Create an image dataset in the file
-    # store as uint8 -> 0-255
-    file.create_dataset("train_images", np.shape(train_x),
-                        h5py.h5t.STD_U8BE, data=train_x)
-    file.create_dataset("valid_images", np.shape(valid_x),
-                        h5py.h5t.STD_U8BE, data=valid_x)
-    file.create_dataset("test_images", np.shape(test_x),
-                        h5py.h5t.STD_U8BE, data=test_x)
-
-    file.create_dataset("train_labels", np.shape(train_y),
-                        h5py.h5t.STD_U8BE, data=train_y)
-    file.create_dataset("valid_labels", np.shape(valid_y),
-                        h5py.h5t.STD_U8BE, data=valid_y)
-    file.create_dataset("test_labels", np.shape(test_y),
-                        h5py.h5t.STD_U8BE, data=test_y)
-    file.close()
-    return file
-
-
-
 def main():
     if len(sys.argv) == 2:
         quit_lst = ['q', 'quit']
@@ -114,6 +77,7 @@ def main():
                 X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
                 X_train, X_valid, X_test = X_splits
                 y_train, y_valid, y_test = y_splits
+
                 # Get stats from training set for data preprocessing
                 X_train_mean_rgb = np.mean(X_train, axis=tuple(range(X_train.ndim-1)))
                 X_train_std_rgb = np.std(X_train, axis=tuple(range(X_train.ndim-1)))
@@ -143,13 +107,11 @@ def main():
                         seg_imgs = []
                         for img in images:
                             rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                            #img_noback = remove_background(rgb_img, p_type=int(p_option), verbose=True)
                             img_noback = remove_background(
                                 rgb_img, p_type=int(p_option))  # , verbose=True)
                             seg_imgs.append(img_noback)
                         seg_imgs = np.array(seg_imgs)
                         images = seg_imgs
-                        #plant_data.seg_data = store_hdf5('segm_dataset', seg_imgs, labels)
                         print('Done')
 
                     else:
@@ -166,13 +128,10 @@ def main():
                         for img in images:
                             rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                             img_noback = remove_background(
-                                #rgb_img, p_type=int(p_option), dist=True, verbose=True)
                                 rgb_img, p_type=int(p_option), dist=True)
                             seg_imgs.append(img_noback)
                         seg_imgs = np.array(seg_imgs)
                         images = seg_imgs
-                        #plant_data.seg_data = store_hdf5(
-                        #    'segm_dist_dataset', seg_imgs, labels)
                     else:
                         print('Invalid option')
                         continue
@@ -199,7 +158,6 @@ def main():
                     with open(f"seg_{label_type}_train_stats_224.json", "w") as outfile:
                         json.dump(train_stats, outfile, indent=4)
                     store_hdf5(dataset_name,  X_train, X_valid, X_test, y_train, y_valid, y_test)
-
 
                 if options == '3':
                     print('test 3')

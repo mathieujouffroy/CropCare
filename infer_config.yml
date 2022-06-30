@@ -1,0 +1,18 @@
+---
+#
+# YAML configuration file for infer.py
+#
+
+# the random seed, for reproducibility
+# set to null for no random seed
+seed: 42
+# the size of each batch of images when performing prediction
+batch_size: 32
+# the path to the directory of the test (holdout) dataset
+dataset: ''
+
+# the path to the root directory used to store experiments
+xp_rootdir: 'experiments/'
+# the name of log directory for an experiment (result of training)
+# you can set to 'last' to refer to the lastly created directory under in <xp_rootdir>
+#xp_name:

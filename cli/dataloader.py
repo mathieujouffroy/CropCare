@@ -19,7 +19,8 @@ from torch import nn
 
 RANDOM_SEED = 42
 
-def store_hdf5(name, images, healthy, plant, disease, gen_disease):
+
+def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
     """
     Stores an array of images to HDF5.
 
@@ -33,31 +34,24 @@ def store_hdf5(name, images, healthy, plant, disease, gen_disease):
 
     # Create a new HDF5 file
     file = h5py.File(name, "w")
-    print(f"Images:     {np.shape(images)}  -- dtype: {images.dtype}")
-    print(f"Healthy:    {np.shape(healthy)} -- dtype: {healthy.dtype}")
-    print(f"Plant:      {np.shape(plant)}   -- dtype: {plant.dtype}")
-    print(f"Disease:    {np.shape(disease)} -- dtype: {disease.dtype}")
-    print(
-        f"Gen_Disease: {np.shape(gen_disease)} -- dtype: {gen_disease.dtype}")
+    print(f"Train Images:     {np.shape(train_x)}  -- dtype: {train_x.dtype}")
+    print(f"Train Labels:    {np.shape(train_y)} -- dtype: {train_y.dtype}")
 
     # Create an image dataset in the file
     # store as uint8 -> 0-255
-    img_dataset = file.create_dataset("images", np.shape(
-        images), h5py.h5t.STD_U8BE, data=images)
+    file.create_dataset("train_images", np.shape(train_x),
+                        h5py.h5t.STD_U8BE, data=train_x)
+    file.create_dataset("valid_images", np.shape(valid_x),
+                        h5py.h5t.STD_U8BE, data=valid_x)
+    file.create_dataset("test_images", np.shape(test_x),
+                        h5py.h5t.STD_U8BE, data=test_x)
 
-    # Create a label dataset for healthy/sick in the file
-    healthy_set = file.create_dataset("healthy", np.shape(
-        healthy), h5py.h5t.STD_U8BE, data=healthy)
-    # Create a label dataset for plants in the file
-    plant_set = file.create_dataset("plant", np.shape(
-        plant), h5py.h5t.STD_U8BE, data=plant)
-    # Create a label dataset for diseases in the file
-    disease_set = file.create_dataset("disease", np.shape(
-        disease), h5py.h5t.STD_U8BE, data=disease)
-    # Create a label dataset for general diseases in the file
-    gen_disease_set = file.create_dataset("gen_disease", np.shape(
-        gen_disease), h5py.h5t.STD_U8BE, data=gen_disease)
-
+    file.create_dataset("train_labels", np.shape(train_y),
+                        h5py.h5t.STD_U8BE, data=train_y)
+    file.create_dataset("valid_labels", np.shape(valid_y),
+                        h5py.h5t.STD_U8BE, data=valid_y)
+    file.create_dataset("test_labels", np.shape(test_y),
+                        h5py.h5t.STD_U8BE, data=test_y)
     file.close()
     return file
 
@@ -152,7 +146,7 @@ class PlantDataset():
                 else:
                     state_img["healthy"] = 0
                 plant_state = f"{plant_specie}_{disease}"
-
+                # class: healthy - binary
                 healthy = state_img["healthy"]
                 img_folder_name = f"{self.basefolder}/{folder}"
                 if self.verbose:
@@ -161,14 +155,9 @@ class PlantDataset():
                 img_list = [i for i in img_list if not i.startswith(".DS")]
                 random.shuffle(img_list)
 
-                #train_path, val_path, test_path, train_y, val_y, test_y = split_for_training(i, class_img_paths, train_path, val_path, test_path, train_y, val_y, test_y)
-                #print(f"{folder}\ntrain: {len(train_path)}\nval: {len(val_path)}\ntest: {len(test_path)}")
-                #train_x = np.array(cai.datasets.load_images_from_files(train_path, target_size=target_size, smart_resize=smart_resize, lab=lab, rescale=True, bipolar=bipolar), dtype='float32')
-
                 p_img_lst = []
                 for img_file in img_list:
                     absolute_file_name = img_folder_name+'/'+img_file
-                    #print(absolute_file_name)
                     image = cv2.imread(absolute_file_name)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                     #image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
@@ -178,8 +167,6 @@ class PlantDataset():
                                 f"Found wrong image shape: {absolute_file_name}.\nShape {image.shape} instead of {self.img_shape}")
                         if (image.shape[-1] > self.img_shape[-1]):
                             image = cv2.resize(image, (256, 256), interpolation=cv2.INTER_AREA)
-                    ##continue
-                    #raw_data_at.add_file()
 
                     images_lst.append(image)
                     healthy_lst.append(healthy)
@@ -232,40 +219,34 @@ class PlantDataset():
                       for i in range(len(np.unique(disease_lst)))}
         general_diseases_d = {i: np.unique(general_disease_lst)[i]
                               for i in range(len(np.unique(general_disease_lst)))}
-
         labels_dict = {"plants": plants_d, "diseases": diseases_d,
                        "general_diseases": general_diseases_d}
-
         #for name, elem in labels_dict.items():
         #    with open(f'../resources/{name}_label_map.json', 'w') as f:
         #        json.dump(elem, f, indent=4)
 
         rev_plants_d = {v: k for k, v in plants_d.items()}
-        rev_diseases_d = {v: k for k, v in diseases_d.items()}
-        rev_general_diseases_d = {v: k for k, v in general_diseases_d.items()}
+        rev_disease_d = {v: k for k, v in diseases_d.items()}
+        rev_general_disease_d = {v: k for k, v in general_diseases_d.items()}
 
         plants_arr = np.array([rev_plants_d[val] for val in plant_lst])
-        diseases_arr = np.array([rev_diseases_d.get(val)
-                                for val in disease_lst])
-        general_diseases_arr = np.array(
-            [rev_general_diseases_d.get(val) for val in general_disease_lst])
+        disease_arr = np.array([rev_disease_d.get(val) for val in disease_lst])
+        general_disease_arr = np.array(
+            [rev_general_disease_d.get(val) for val in general_disease_lst])
 
         self.img_nbr = total_pic
-        self.dataset_path = f'dataset_224_{self.img_nbr}.h5'
         self.images = images_arr
         self.healthy = healthy_arr
         self.plants = plants_arr
-        self.diseases = diseases_arr
-        self.general_diseases = general_diseases_arr
-        #self.dataset = store_hdf5(self.dataset_path, images_arr, healthy_arr,
-        #                          plants_arr, diseases_arr, general_diseases_arr)
+        self.diseases = disease_arr
+        self.general_diseases = general_disease_arr
         return plant_df
 
     def get_relevant_images_labels(self, label_type):
         if label_type == 'plant':
             label = self.plants
         elif label_type == 'disease':
-            label = self.diseases 
+            label = self.diseases
         elif label_type == 'gen_disease':
             label = self.gen_diseases
         elif label_type == 'healthy':
