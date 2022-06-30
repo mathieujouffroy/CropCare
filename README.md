@@ -20,7 +20,7 @@ python cli.py path_to_parent_folder_containing_images
 ```
 
 ## Train_framework
-Script to train different CV models on given classification task (multiclass or binary).<>br
+Script to train different CV models on given classification task (multiclass or binary).<br>
 The configuration parameters are in the train_config.yml file.
 <br>
 <br>
