@@ -6,6 +6,7 @@ __pycache__/
 resources/*
 resources/Plant_leave_diseases_dataset_without_augmentation
 resources/Plant_leave_diseases_dataset_with_augmentation
+Test
 
 .DS_Store
 .env
