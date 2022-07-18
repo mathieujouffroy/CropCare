@@ -16,6 +16,9 @@ from PIL import Image
 import requests
 import torch
 from torch import nn
+import datasets
+from transformers import ViTFeatureExtractor
+from transformers import DefaultDataCollator
 
 RANDOM_SEED = 42
 
@@ -344,3 +347,45 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{elem} class distribution", showlegend=False)
             this_figure.show()
+
+
+feature_extractor = ViTFeatureExtractor.from_pretrained(
+    "google/vit-base-patch16-224")
+
+# basic processing (only resizing)
+def process(examples):
+    examples.update(feature_extractor(examples['img'], ))
+    return examples
+
+
+def create_hf_ds(images, labels, class_names):
+    features = datasets.Features({
+        "img": datasets.Image(),
+        # ClassLabel feature type is for single-label multi-class classification
+        # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
+        "label": datasets.features.ClassLabel(names=class_names)
+    })
+    print(features)
+    print("buildind dataset")
+    ds = datasets.Dataset.from_dict(
+        {"img": images, "label": labels}, features=features)
+
+    # TEST : 'facebook/deit-base-patch16-224'
+    # swin -> microsoft/swin-tiny-patch4-window7-224
+    data_collator = DefaultDataCollator(return_tensors="tf")
+
+    ds = ds.rename_column("label", "labels")
+    print("before mapping")
+    ds = ds.map(process, batched=True)#, writer_batch_size=10)
+    print("before shuffle")
+    ds = ds.shuffle(seed=42)
+    print("after mapping")
+    #tf_dataset = ds.to_tf_dataset(
+    #   columns=['pixel_values'],
+    #   label_cols=["labels"],
+    #   shuffle=True,
+    #   batch_size=32,
+    #   collate_fn=data_collator)
+    #return tf_dataset
+    return ds
+

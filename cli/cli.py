@@ -4,7 +4,7 @@ import time
 import sys
 import h5py
 from cli_utils import bcolors, strawb, animate
-from dataloader import PlantDataset, load_hdf5, store_hdf5
+from dataloader import PlantDataset, load_hdf5, store_hdf5, create_hf_ds
 from leaf_segmentation import *
 import plantcv as pcv
 import json
@@ -89,7 +89,32 @@ def main():
                 print(f"X train std : {X_train_std_rgb}")
                 with open(f"{label_type}_train_stats_224.json", "w") as outfile:
                     json.dump(train_stats, outfile, indent=4)
-                store_hdf5(f"{label_type}_{plant_data.img_nbr}_ds_224.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+
+                ###
+                # CREATE TRANSFORMER DATASET
+                if label_type !=  'healthy':
+                    if label_type == 'disease':
+                        label_map_path = '../resources/diseases_label_map.json'
+                    elif label_type == 'plants':
+                        label_map_path = '../resources/plants_label_map.json'
+                    else:
+                        label_map_path = '../resources/general_diseases_label_map.json'
+                    with open(label_map_path) as f:
+                        id2label = json.load(f)
+                    class_names = [str(v) for k,v in id2label.items()]
+                else:
+                    class_names = ['healthy', 'not_healthy']
+                print(f"  Class names = {class_names}")
+
+                train_sets = create_hf_ds(X_train, y_train, class_names)
+                train_sets.save_to_disk("../resources/transformers_ds/train")
+                valid_sets = create_hf_ds(X_valid, y_valid, class_names)
+                valid_sets.save_to_disk("../resources/transformers_ds/valid")
+                test_sets = create_hf_ds(X_test, y_test, class_names)
+                test_sets.save_to_disk("../resources/transformers_ds/test")
+                ###
+
+                #store_hdf5(f"{label_type}_{plant_data.img_nbr}_ds_224.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
 
                 options = input(f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Extract Features for ML Classification\n{bcolors.OKBLUE}[4]{bcolors.ENDC} -- Preprocess for CNN\n{bcolors.OKBLUE}[5]{bcolors.ENDC} -- Plant Health Classification{bcolors.OKBLUE}\n[6]{bcolors.ENDC} -- Plant Classification{bcolors.OKBLUE}\n[7]{bcolors.ENDC} -- Plant Disease Classification\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
 
