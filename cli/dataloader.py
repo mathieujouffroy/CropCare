@@ -1,24 +1,19 @@
 import os
-import h5py
 import PIL
+import cv2
+import glob
+import h5py
+import json
+import wandb
+import random
+import datasets
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import cv2
 import plotly.express as px
 import plotly.subplots as sp
-import random
-import glob
-import wandb
-import json
-from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
 from PIL import Image
-import requests
-import torch
-from torch import nn
-import datasets
-from transformers import ViTFeatureExtractor
-from transformers import DefaultDataCollator
+from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
 
 RANDOM_SEED = 42
 
@@ -160,6 +155,8 @@ class PlantDataset():
 
                 p_img_lst = []
                 for img_file in img_list:
+                    if not img_file.endswith(".JPG"):
+                        print(img_file)
                     absolute_file_name = img_folder_name+'/'+img_file
                     image = cv2.imread(absolute_file_name)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -168,7 +165,8 @@ class PlantDataset():
                         if (image.shape[-1] != self.img_shape[-1]):
                             print(
                                 f"Found wrong image shape: {absolute_file_name}.\nShape {image.shape} instead of {self.img_shape}")
-                        if (image.shape[-1] > self.img_shape[-1]):
+                        if (image.shape[0] > self.img_shape[0]):
+                            #print(image.shape)
                             image = cv2.resize(image, (256, 256), interpolation=cv2.INTER_AREA)
 
                     images_lst.append(image)
@@ -212,7 +210,13 @@ class PlantDataset():
             print(
                 f"RGB values for pixel (100th rows, 50th column): {image[100, 50]}\n")
 
-        images_arr = np.array(images_lst, dtype=np.uint8)
+
+        for x in images_lst:
+            if x.dtype != 'uint8':
+                print(x.dtype)
+        #print(images_lst)
+        #images_arr = np.array(images_lst)#, dtype=np.uint8)
+        images_arr = np.array(images_lst, dtype=object)
         healthy_arr = np.array(healthy_lst).astype(int).astype(bool)
 
         # {"label":id} -> reversed
@@ -222,8 +226,9 @@ class PlantDataset():
                       for i in range(len(np.unique(disease_lst)))}
         general_diseases_d = {i: np.unique(general_disease_lst)[i]
                               for i in range(len(np.unique(general_disease_lst)))}
-        labels_dict = {"plants": plants_d, "diseases": diseases_d,
-                       "general_diseases": general_diseases_d}
+
+        #labels_dict = {"plants": plants_d, "diseases": diseases_d,
+        #               "general_diseases": general_diseases_d}
         #for name, elem in labels_dict.items():
         #    with open(f'../resources/{name}_label_map.json', 'w') as f:
         #        json.dump(elem, f, indent=4)
@@ -349,16 +354,25 @@ class PlantDataset():
             this_figure.show()
 
 
-feature_extractor = ViTFeatureExtractor.from_pretrained(
-    "google/vit-base-patch16-224")
+def resize_images(img_arr, img_size):
+    resized_arr = []
+    for img in img_arr:
+        new_img = cv2.resize(img, dsize=img_size, interpolation=cv2.INTER_AREA)
+        resized_arr.append(new_img)
+    resized_arr = np.array(resized_arr)
+    return resized_arr
+
+
+#feature_extractor = ViTFeatureExtractor.from_pretrained(
+#    "google/vit-base-patch16-224")
 
 # basic processing (only resizing)
-def process(examples):
+def process(examples, feature_extractor):
     examples.update(feature_extractor(examples['img'], ))
     return examples
 
 
-def create_hf_ds(images, labels, class_names):
+def create_hf_ds(images, labels, feature_extractor, class_names):
     features = datasets.Features({
         "img": datasets.Image(),
         # ClassLabel feature type is for single-label multi-class classification
@@ -372,11 +386,11 @@ def create_hf_ds(images, labels, class_names):
 
     # TEST : 'facebook/deit-base-patch16-224'
     # swin -> microsoft/swin-tiny-patch4-window7-224
-    data_collator = DefaultDataCollator(return_tensors="tf")
+    #data_collator = DefaultDataCollator(return_tensors="tf")
 
     ds = ds.rename_column("label", "labels")
     print("before mapping")
-    ds = ds.map(process, batched=True)#, writer_batch_size=10)
+    ds = ds.map(lambda x: process(x, feature_extractor), batched=True)#, writer_batch_size=10)
     print("before shuffle")
     ds = ds.shuffle(seed=42)
     print("after mapping")
@@ -389,3 +403,35 @@ def create_hf_ds(images, labels, class_names):
     #return tf_dataset
     return ds
 
+def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test):
+    if label_type !=  'healthy':
+        if label_type == 'disease':
+            label_map_path = '../resources/label_maps/diseases_label_map.json'
+        elif label_type == 'plants':
+            label_map_path = '../resources/label_maps/plants_label_map.json'
+        else:
+            label_map_path = '../resources/label_maps/general_diseases_label_map.json'
+        with open(label_map_path) as f:
+            id2label = json.load(f)
+        class_names = [str(v) for k,v in id2label.items()]
+    else:
+        class_names = ['healthy', 'not_healthy']
+    print(f"  Class names = {class_names}")
+    fe_dict = {
+        'vit': ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224"),
+        'swin': AutoFeatureExtractor.from_pretrained("microsoft/swin-tiny-patch4-window7-224"),
+        'convnext': ConvNextFeatureExtractor.from_pretrained("facebook/convnext-tiny-224")
+    }
+    for name, feature_extractor in fe_dict.items():
+        train_sets = create_hf_ds(
+            X_train, y_train, feature_extractor, class_names)
+        train_sets.save_to_disk(
+            f"../resources/transformers_ds/{name}/train")
+        valid_sets = create_hf_ds(
+            X_valid, y_valid, feature_extractor, class_names)
+        valid_sets.save_to_disk(
+            f"../resources/transformers_ds/{name}/valid")
+        test_sets = create_hf_ds(
+            X_test, y_test, feature_extractor, class_names)
+        test_sets.save_to_disk(
+            f"../resources/transformers_ds/{name}/test")

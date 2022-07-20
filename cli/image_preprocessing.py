@@ -183,19 +183,19 @@ def remove_whites(image, mask):
         mask: mask with white pixels removed
     """
     # setup the white remover to process logical_and in place
-    white_remover = np.full((image.shape[0], image.shape[1]), 0)
-    white_remover[image[:, :, 0] >= 250] = 255
-    white_remover[image[:, :, 1] >= 200] = 255
-    white_remover[image[:, :, 2] >= 250] = 255
+    white_remover = np.full((image.shape[0], image.shape[1]), False)
+    white_remover[image[:, :, 0] >= 230] = True
+    white_remover[image[:, :, 1] >= 230] = True
+    white_remover[image[:, :, 2] >= 230] = True
     # remove whites from mask
-    mask[white_remover] = 255
+    mask[white_remover] = True
     return mask
 
 
 def fill_object(rgb_img, final_mask):
     """
     Fills the object in the mask with white pixels.
-    Args:
+    Parameters:
         rgb_img (numpy.ndarray):    RGB image to process
         final_mask (numpy.ndarray): mask to extract the object to fill
     Returns:
@@ -208,6 +208,9 @@ def fill_object(rgb_img, final_mask):
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     # fill polygon with white pixels given end points (cnts)
     final_mask = cv2.fillPoly(final_mask, cnts, (255, 255, 255))
+    kernel = np.ones((3, 3), np.uint8)
+    final_mask = cv2.morphologyEx(final_mask, cv2.MORPH_OPEN, kernel)
+    # apply mask to the original image
     no_back_img = cv2.bitwise_and(rgb_img, rgb_img, mask=final_mask)
     return final_mask, no_back_img
 

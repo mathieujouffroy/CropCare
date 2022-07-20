@@ -151,11 +151,11 @@ def color_mask(rgb_img, ls1, ls2, type=1, verbose=False):
     return final_mask, result, disease_result
 
 
-def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast=False, cast=False, verbose=False):
+def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast=False, cast=False, verbose=False, subtitle=None):
     """
     Image segmentation using background subtraction.
 
-    Args:
+    Parameters:
         rgb_img (numpy.array):      RGB image
         dist (bool):                option to use distance transformation
         white (bool):               option to remove white pixels from mask
@@ -170,40 +170,40 @@ def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast
     if cast: new_img = color_cast_removal(new_img)
     if contrast: new_img = adjust_contrast(new_img)
     if lightness: new_img = adjust_lightness(new_img)
-    #test = automatic_brightness_and_contrast(rgb_img, verbose=True)
-    #new_img = adjust_gamma(new_img)
-
 
     final_mask, result, disease_result = color_mask(
-        new_img, ls1=17, ls2=60)
+      new_img, ls1=17, ls2=60)
+     #new_img, ls1=17, ls2=60, type=2) 
 
     # if image is not of white majority -> remove whites on leaves
     if white:
-        final_mask = remove_whites(rgb_img, final_mask)
+        corrected_img = remove_whites(rgb_img, final_mask)
+        final_mask = corrected_img
     if dist:
         dist_transf = distance_transform_fb(rgb_img, final_mask)
 
-    final_mask, no_back_img = fill_object(rgb_img, final_mask)
 
+    final_mask, no_back_img = fill_object(rgb_img, final_mask)
+    
     if verbose:
-        imgs = [rgb_img, new_img, result, disease_result, final_mask, no_back_img]
-        titles = ['rgb img', 'new_img', 'mask on blue-green-yellow',
+        imgs = [rgb_img, new_img, result,
+                disease_result, final_mask, no_back_img]
+        titles = ['rgb img', 'CLAHE', 'mask on greenish',
                   'mask on red-brown', 'HSV_mask', 'back segm img']
         if dist:
             imgs.append(dist_transf)
-            titles.append('dist transf')
-        plot_multiple_img(imgs=imgs, gray=True, titles=titles)
-
+            titles.append('dist transf (optional)')
+        plot_multiple_img(imgs, True, titles=titles, subtitle=subtitle)
+    
     if dist:
         no_back_img = dist_transf
     return no_back_img
-
 
 def remove_background(rgb_img, p_type, dist=False, morphs=False, adapt_th=False, verbose=False):
     """
     Remove background from RGB image.
 
-    Args:
+    Parameters:
         rgb_img (numpy.array):   RGB image
         p_type (int):            type of image preprocessing
         dist(bool):              option to use distance transformations
@@ -221,18 +221,24 @@ def remove_background(rgb_img, p_type, dist=False, morphs=False, adapt_th=False,
         adaptive_thresh_and_canny(image_gray)
 
     if p_type == 0:
-        #print("----- ORIGINAL -----")
-        no_back_img = back_segmentation(rgb_img,  dist=dist, verbose=vb)
+        print("----- ORIGINAL -----")
+        no_back_img = back_segmentation(rgb_img,  dist=dist, verbose=vb, subtitle='ORIGINAL')
     elif p_type == 1:
-        #print("----- LIGHTNESS ADJUSTED -----")
+        print("----- CONTRASTED -----")
         no_back_img = back_segmentation(
-            rgb_img, dist=dist, lightness=True, verbose=vb)
+            rgb_img, dist=dist, contrast=True, verbose=vb, subtitle='CONTRASTED')
     elif p_type == 2:
-        #print("----- CONTRASTED -----")
+        print("----- CONTRAST & LIGHTNESS ADJUSTED -----")
         no_back_img = back_segmentation(
-            rgb_img, dist=dist, contrast=True, verbose=vb)
-    elif p_type == 3:
-        #print("----- CONTRAST & LIGHTNESS ADJUSTED -----")
-        no_back_img = back_segmentation(
-            rgb_img, dist=dist, lightness=True, contrast=True, verbose=vb)
+            rgb_img, dist=dist, lightness=True, contrast=True, verbose=vb, subtitle='CONTRAST & LIGHTNESS ADJUSTED')
     return no_back_img
+
+def segment_split_set(img_arr, p_option, dist=False):
+    seg_imgs = []
+    for img in img_arr:
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_noback = remove_background(
+            rgb_img, p_type=int(p_option), dist=dist)  # , verbose=True)
+        seg_imgs.append(img_noback)
+    seg_imgs = np.array(seg_imgs)
+    return seg_imgs

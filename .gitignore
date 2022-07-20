@@ -3,9 +3,11 @@ __pycache__/
 /*/*/__pycache__
 /**/__pycache__
 
-resources/*
+resources/experiments
 resources/Plant_leave_diseases_dataset_without_augmentation
 resources/Plant_leave_diseases_dataset_with_augmentation
+resources/small_test
+resources/wandb
 Test
 
 .DS_Store

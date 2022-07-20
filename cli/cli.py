@@ -3,11 +3,11 @@ import threading
 import time
 import sys
 import h5py
-from cli_utils import bcolors, strawb, animate
-from dataloader import PlantDataset, load_hdf5, store_hdf5, create_hf_ds
-from leaf_segmentation import *
-import plantcv as pcv
 import json
+import numpy as np
+from cli_utils import bcolors, strawb, animate
+from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
+from leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
 
 def get_split_sets(seed, class_type, images, labels):
@@ -50,6 +50,19 @@ def get_split_sets(seed, class_type, images, labels):
     return [X_train, X_valid, X_test], label_split_lst
 
 
+
+def dump_training_stats(X_train, label_type, prefix):
+    X_train_mean_rgb = np.round(np.mean(X_train, axis=tuple(range(X_train.ndim-1))), 3)
+    X_train_std_rgb = np.round(np.std(X_train, axis=tuple(range(X_train.ndim-1))), 3)
+    train_stats = {
+        'X_train_mean_rgb': X_train_mean_rgb.tolist(),
+        'X_train_std_rgb': X_train_std_rgb.tolist()
+    }
+    print(f"X train mean : {X_train_mean_rgb}")
+    print(f"X train std : {X_train_std_rgb}")
+    with open(f"{prefix}{label_type}_train_stats_224.json", "w") as outfile:
+        json.dump(train_stats, outfile, indent=4)
+
 def main():
     if len(sys.argv) == 2:
         quit_lst = ['q', 'quit']
@@ -57,7 +70,6 @@ def main():
         no = ['n', 'no']
         plant_data = PlantDataset(sys.argv[1], verbose=True)
         plant_df = plant_data.load_data()
-        print("load data done")
         print(
             f"\n\n{bcolors.OKGREEN}==================  POP FARM : Plant Phenotyping  =================={bcolors.ENDC}")
         print(f"{bcolors.FAIL}{strawb}{bcolors.ENDC}\n\n")
@@ -69,52 +81,21 @@ def main():
                 label_type = input(f'Enter the label type: plant, disease, healthy, gen_disease\n').lower()
                 assert label_type in ['plant', 'disease', 'healthy', 'gen_disease']
                 images, labels = plant_data.get_relevant_images_labels(label_type)
-                print("load relevant data done")
-                noseg_images = []
-                for img in images:
-                    noseg_images.append(cv2.resize(img, dsize=(224, 224), interpolation=cv2.INTER_AREA))
-                noseg_images = np.array(noseg_images)
+
+                noseg_images = resize_images(images, (224, 224))
                 X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
                 X_train, X_valid, X_test = X_splits
                 y_train, y_valid, y_test = y_splits
-
                 # Get stats from training set for data preprocessing
-                X_train_mean_rgb = np.mean(X_train, axis=tuple(range(X_train.ndim-1)))
-                X_train_std_rgb = np.std(X_train, axis=tuple(range(X_train.ndim-1)))
-                train_stats = {
-                    'X_train_mean_rgb': X_train_mean_rgb.tolist(),
-                    'X_train_std_rgb': X_train_std_rgb.tolist()
-                }
-                print(f"X train mean : {X_train_mean_rgb}")
-                print(f"X train std : {X_train_std_rgb}")
-                with open(f"{label_type}_train_stats_224.json", "w") as outfile:
-                    json.dump(train_stats, outfile, indent=4)
+                dump_training_stats(X_train, label_type, prefix='augm_')
 
-                ###
+                store_hdf5(f"augm_{label_type}_{plant_data.img_nbr}_ds_224.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+                
                 # CREATE TRANSFORMER DATASET
-                if label_type !=  'healthy':
-                    if label_type == 'disease':
-                        label_map_path = '../resources/diseases_label_map.json'
-                    elif label_type == 'plants':
-                        label_map_path = '../resources/plants_label_map.json'
-                    else:
-                        label_map_path = '../resources/general_diseases_label_map.json'
-                    with open(label_map_path) as f:
-                        id2label = json.load(f)
-                    class_names = [str(v) for k,v in id2label.items()]
-                else:
-                    class_names = ['healthy', 'not_healthy']
-                print(f"  Class names = {class_names}")
+                #print(f"label type: {label_type}")
+                create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
 
-                train_sets = create_hf_ds(X_train, y_train, class_names)
-                train_sets.save_to_disk("../resources/transformers_ds/train")
-                valid_sets = create_hf_ds(X_valid, y_valid, class_names)
-                valid_sets.save_to_disk("../resources/transformers_ds/valid")
-                test_sets = create_hf_ds(X_test, y_test, class_names)
-                test_sets.save_to_disk("../resources/transformers_ds/test")
-                ###
-
-                #store_hdf5(f"{label_type}_{plant_data.img_nbr}_ds_224.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+                
 
                 options = input(f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Extract Features for ML Classification\n{bcolors.OKBLUE}[4]{bcolors.ENDC} -- Preprocess for CNN\n{bcolors.OKBLUE}[5]{bcolors.ENDC} -- Plant Health Classification{bcolors.OKBLUE}\n[6]{bcolors.ENDC} -- Plant Classification{bcolors.OKBLUE}\n[7]{bcolors.ENDC} -- Plant Disease Classification\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
 
@@ -129,63 +110,36 @@ def main():
                     p_option = input(
                         f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Lightness\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
                     if p_option in ['0', '1', '2', '3']:
-                        seg_imgs = []
-                        for img in images:
-                            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                            img_noback = remove_background(
-                                rgb_img, p_type=int(p_option))  # , verbose=True)
-                            seg_imgs.append(img_noback)
-                        seg_imgs = np.array(seg_imgs)
-                        images = seg_imgs
-                        print('Done')
-
+                        train_seg = segment_split_set(X_train, p_option)
+                        val_seg = segment_split_set(X_valid, p_option)
+                        test_seg = segment_split_set(X_test, p_option)
                     else:
                         print('Invalid option')
                         continue
-                    print('Done')
 
                 if options == '2':
                     print('Leag Segmentation HSV mask + dist transform')
                     p_option = input(
                         f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Lightness\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
                     if p_option in ['0', '1', '2', '3']:
-                        seg_imgs = []
-                        for img in images:
-                            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                            img_noback = remove_background(
-                                rgb_img, p_type=int(p_option), dist=True)
-                            seg_imgs.append(img_noback)
-                        seg_imgs = np.array(seg_imgs)
-                        images = seg_imgs
+                        train_seg = segment_split_set(X_train, p_option, dist=True)
+                        val_seg = segment_split_set(X_valid, p_option, dist=True)
+                        test_seg = segment_split_set(X_test, p_option, dist=True)
                     else:
                         print('Invalid option')
                         continue
-                    print('Done')
 
                 if options in ['1', '2']:
                     dataset_name = f"segm_{label_type}_{plant_data.img_nbr}_ds_224.h5"
-                    seg_imgs = []
-                    for img in images:
-                        seg_imgs.append(cv2.resize(img, dsize=(224, 224), interpolation=cv2.INTER_AREA))
-                    seg_imgs = np.array(seg_imgs)
-                    X_splits, y_splits = get_split_sets(42, label_type, images, labels)
                     X_train, X_valid, X_test = X_splits
                     y_train, y_valid, y_test = y_splits
+                    X_train_seg = resize_images(train_seg, (224, 224))
+                    X_val_seg = resize_images(val_seg, (224, 224))
+                    X_test_seg = resize_images(test_seg, (224, 224))
                     # Get stats from training set for data preprocessing
-                    X_train_mean_rgb = np.mean(X_train, axis=tuple(range(X_train.ndim-1)))
-                    X_train_std_rgb = np.std(X_train, axis=tuple(range(X_train.ndim-1)))
-                    train_stats = {
-                        'X_train_mean_rgb': X_train_mean_rgb.tolist(),
-                        'X_train_std_rgb': X_train_std_rgb.tolist()
-                    }
-                    print(f"X train mean : {X_train_mean_rgb}")
-                    print(f"X train std : {X_train_std_rgb}")
-                    with open(f"seg_{label_type}_train_stats_224.json", "w") as outfile:
-                        json.dump(train_stats, outfile, indent=4)
-                    store_hdf5(dataset_name,  X_train, X_valid, X_test, y_train, y_valid, y_test)
+                    dump_training_stats(X_train_seg, label_type, prefix='segm_')
+                    store_hdf5(dataset_name,  X_train_seg, X_val_seg, X_test_seg, y_train, y_valid, y_test)
 
-                if options == '3':
-                    print('test 3')
                 if options.lower() in quit_lst:
                     print("Bye !")
                     break

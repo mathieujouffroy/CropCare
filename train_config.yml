@@ -7,9 +7,10 @@
 seed: 42
 # the size of each batch of images when training careful not to use a
 # too large batch size, might lead to OOM errors
+#batch_size: 16
 batch_size: 32
 # Total number of training epochs to perform.
-n_epochs: 2
+n_epochs: 16
 # the optimizer to use
 optimizer: 'adam'
 # the learning rate for the optimizer
@@ -21,24 +22,27 @@ class_weights: True
 # Option to print all warnings related to data processing
 verbose: True
 # Option to use wandb for logging
-wandb: False
+wandb: True
 # Option to overwrite the content of the output directory
 overwrite_output_dir: True
 # Option to use PolyLoss as loss function
 polyloss: False
 
-# the path to the directory of the dataset
-dataset: '../resources/plant_dataset_209_split_sets.h5'
+transformer: False
 
-transformer: True
+# the path to the directory of the dataset
+dataset: '../resources/datasets/no_augmentation/disease_54305_ds_128.h5'
+#dataset: '../resources/small_test/plant_dataset_209_split_sets.h5'
 
 # the path to the root directory used to store experiments
 # a directory per experiment will be created named with the datetime during execution
 # Output directory where the model checkpoint and prediction will be written
-output_dir: 'experiments/tEEE'
+#output_dir: 'experiments/eval_models_pl_disease'
+output_dir: 'experiments/test-scaling'
+#output_dir: 'experiments/TEE'
 
 train_mean: [118.933, 124.707, 104.610]
 train_std: [50.728, 44.546, 55.380]
 
-##parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
-##parser.add_argument("--eval_all_checkpoints", action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")
+#augm_train_mean: [118.264, 124.730, 104.133]
+#augm_train_std: [48.91, 42.169, 53.590]
