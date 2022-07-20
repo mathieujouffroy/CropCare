@@ -2,7 +2,7 @@
 Plant Disease Classification
 
 ## CLI
-Used to generate the dataset.
+Command Line Interface used to generate the dataset.
 <br>
 <br>
 You have the possibility to choose between 4 types of labels:<br>
@@ -20,7 +20,7 @@ python cli.py path_to_parent_folder_containing_images
 ```
 
 ## Train_framework
-Script to train different CV models on given classification task (multiclass or binary).<br>
+Script to train different CV models on a given classification task (multiclass or binary).<br>
 The configuration parameters are in the train_config.yml file.
 <br>
 <br>
