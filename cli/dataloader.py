@@ -427,10 +427,12 @@ def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid
             X_train, y_train, feature_extractor, class_names)
         train_sets.save_to_disk(
             f"../resources/transformers_ds/{name}/train")
+        
         valid_sets = create_hf_ds(
             X_valid, y_valid, feature_extractor, class_names)
         valid_sets.save_to_disk(
             f"../resources/transformers_ds/{name}/valid")
+        
         test_sets = create_hf_ds(
             X_test, y_test, feature_extractor, class_names)
         test_sets.save_to_disk(
