@@ -18,14 +18,24 @@ def classify_image(input, model, segm, label):
   input = input.reshape((-1, 224, 224, 3))
   if segm:
     input = input
-  if model == 'MobilenetV2':
+  if model == 'CVT':
     input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
-  elif model == 'InceptionV3':
+    clf = tf.keras.applications.MobileNetV2()
+  if model == 'VIT':
     input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
-  elif model == 'InceptionResnet':
+    clf = tf.keras.applications.MobileNetV2()
+  elif model == 'EfficientNetV2B3':
     input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
-  prediction = inception_net.predict(input).flatten()
-  confidences = {labels[i]: float(prediction[i]) for i in range(1000)}
+    clf = tf.keras.applications.MobileNetV2()
+  elif model == 'InceptionResnetV2':
+    input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
+    clf = tf.keras.applications.MobileNetV2()
+  elif model == 'DenseNet201':
+    input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
+    clf = tf.keras.applications.MobileNetV2()
+
+  prediction = clf.predict(input).flatten()
+  confidences = {labels[i]: float(prediction[i]) for i in range(38)}
   return confidences
 
 
@@ -39,11 +49,11 @@ demo = gr.Interface(
               ],
             outputs=gr.Label(num_top_classes=3),
             examples=[
-              ["Test/Plant_leave_diseases_dataset_without_augmentation/Apple___healthy/image (1).JPG", 'Apple Healthy'],
-              ["Test/Plant_leave_diseases_dataset_without_augmentation/Grape___Esca_(Black_Measles)/image (15).JPG", 'Grape Black Measles'],
-              ["Test/Plant_leave_diseases_dataset_without_augmentation/Cherry___Powdery_mildew/image (21).JPG", 'Cherry Powdery mildew'],
-              ["Test/Plant_leave_diseases_dataset_without_augmentation/Pepper,_bell___Bacterial_spot/image (25).JPG", 'Bell Pepper Bacterial_spot'],
-              ["Test/Plant_leave_diseases_dataset_without_augmentation/Strawberry___Leaf_scorch/image (14).JPG", 'Strawberry Leaf_scorch'],
+              ["resources/small_test/Plant_leave_diseases_dataset_without_augmentation/Apple___healthy/image (1).JPG", 'Apple Healthy'],
+              ["resources/small_test/Plant_leave_diseases_dataset_without_augmentation/Grape___Esca_(Black_Measles)/image (15).JPG", 'Grape Black Measles'],
+              ["resources/small_test/Plant_leave_diseases_dataset_without_augmentation/Cherry___Powdery_mildew/image (21).JPG", 'Cherry Powdery mildew'],
+              ["resources/small_test/Plant_leave_diseases_dataset_without_augmentation/Pepper,_bell___Bacterial_spot/image (25).JPG", 'Bell Pepper Bacterial_spot'],
+              ["resources/small_test/Plant_leave_diseases_dataset_without_augmentation/Strawberry___Leaf_scorch/image (14).JPG", 'Strawberry Leaf_scorch'],
               ],
             interpretation="shap",
             num_shap=3,
