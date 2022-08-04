@@ -4,11 +4,10 @@ import tensorflow.keras.layers as tfl
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform
 from tensorflow.keras.applications import VGG16, ResNet50, ResNet50V2, Xception, InceptionV3, InceptionResNetV2, DenseNet201
-from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M
+from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M, ConvNeXtSmall
 from custom_inception_model import *
 from preprocess_tensor import preprocess_image
-from transformers import TFViTModel
-from transformers import ViTFeatureExtractor, TFViTForImageClassification, SwinForImageClassification
+from transformers import TFViTModel, TFViTForImageClassification, TFConvNextModel, TFConvNextForImageClassification, TFSwinModel, TFSwinForImageClassification
 
 
 def simple_conv_model(input_shape, n_classes, mode=None):
@@ -414,7 +413,7 @@ def Resnet50_model(input_shape, n_classes, mode=None):
     return model
 
 
-def prepare_model(model, input_shape, n_classes, mode=None, pretrained=False, finetune=False, transformer=False):
+def prepare_model(model, input_shape, n_classes, mode=None, transfer=False, finetune=False, transformer=False):
     """
     Prepare the model
 
@@ -426,37 +425,47 @@ def prepare_model(model, input_shape, n_classes, mode=None, pretrained=False, fi
         model(keras.Model): the trained model
     """
 
-    if pretrained:
+    if transfer:
         weights = 'imagenet'
     else:
         weights = None
 
     if transformer:
         ## TRANSFORMERS -> CHANNEL FIRST
-        input_shape = (input_shape[-1], input_shape[1], input_shape[1])
+        input_shape = (input_shape[-1], input_shape[1], input_shape[0])
+        print(f"input shape: {input_shape}")
         inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
-        # print(model) -> transformers.models.vit.modeling_tf_vit.TFViTModel
-        # get last layer output
-        vit = model.vit(inputs)[0]
-        # print(vit) -> KerasTensor(type_spec=TensorSpec(shape=(None, 197, 768), dtype=tf.float32, name=None), name='vit/layernorm/batchnorm/add_1:0', description="created by layer 'vit'")
+        # get last layer output, retrieve hidden states
+        # model.vit(inputs) -> outputs : TFBaseModelOutput,  [0] = last_hidden_state
+        #vit = model.vit(inputs)[0]
+        #convnext = model.convnext(inputs)[1]
+        swin = model.swin(inputs)[1]
+        # ouputs = model(**inputs)
+        # last_hidden_states = outputs.last_hidden_state
+        # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
+        # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
+        # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         outputs = keras.layers.Dense(
-            n_classes, activation='softmax', name='predictions')(vit[:, 0, :])
+            n_classes, activation='softmax', name='predictions')(swin)
+            #n_classes, activation='softmax', name='predictions')(convnext)
+            #n_classes, activation='softmax', name='predictions')(vit[:, 0, :])
+            
     else:
         base_model = model(weights=weights, input_shape=input_shape, include_top=False)
 
-        if pretrained:
+        if transfer:
             if finetune:
-                x.trainable = False
-                x = x(inputs, training=False)
+                # unfreeze all or part of the base model and retrain the whole model end-to-end
+                base_model.trainable = True
             else:
-                x.trainable = True
+                base_model.trainable = False
 
         inputs = keras.Input(shape=input_shape)
-
         if mode:
             inputs = preprocess_image(inputs, mode)
 
-        if pretrained:
+        if transfer:
+            # keep the BatchNormalization layers in inference mode by passing training=False
             x = base_model(inputs, training=False)
         else:
             x = base_model(inputs, training=True)
@@ -470,45 +479,47 @@ def prepare_model(model, input_shape, n_classes, mode=None, pretrained=False, fi
     return model
 
 
-def get_models(n_classes, id2label=None, imnet_weights=False):
+### BASELINE
+## omit batch norm -≥ then add quickly batch norm
+## small regularization at start
+## add dropout 2nd run
+## early stopping from 1st run
+## TEST MODEL TRAINED ON IMAGENET
+#tensorboard --logdir logs/fit
+
+def get_models(n_classes, input_shape, id2label=None, imnet_weights=False):
     """
     Get the models for the training and testing.
     """
-    # Test Transformers
-    # Test Convnets + transformers
-    input_shape = (224, 224, 3)
+
     label2id = {v: k for k, v in id2label.items()}
+    print(f"we have {n_classes} classes")
     models_dict = {
         #'baseline_sample_scale': simple_conv_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
         #'baseline_sample_st': simple_conv_model(input_shape, n_classes=n_classes, mode='scale_std'),
-        #'basic_conv': convolutional_model(input_shape, n_classes=n_classes),
-        #'basic_conv_sc_centstd': convolutional_model(input_shape, n_classes=n_classes, mode='scale_std'),
-        #'basic_conv_sc_samplewise': convolutional_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
-        #'LAB_2path_Inceptionv3_sc_samplwise': lab_two_path_inception_v3(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
+        #'basic_conv_centstd': convolutional_model(input_shape, n_classes=n_classes, mode='scale_std'),
+        #'basic_conv_samplewise': convolutional_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
+
         #'alexnet': alexnet_model(input_shape, n_classes=n_classes, mode='centering'),
         #'my_VGG16_sc_center': vgg16_model(input_shape, n_classes=n_classes, mode='centering'),
         #'VGG16_sc_center' : prepare_model(VGG16, input_shape, n_classes, mode='centering'),
-        ## my_resnet almost identitical but very slightly less perfermant than the keras resnet
-        #'my_ResNet50_sc_center': Resnet50_model(input_shape, n_classes=n_classes, mode='centering'),
-        # ResNet50_sc_center' slightly less perfermant than the keras resnet
-        #'ResNet50_sc_center': prepare_model(ResNet50, input_shape, n_classes, mode='centering'),
-        #'ResNet50V2_sc_center': prepare_model(ResNet50V2, input_shape, n_classes, mode='centering'),
-        #'InceptionV3_sc_samplwise': prepare_model(InceptionV3, input_shape, n_classes, mode='sample_wise_scaling'),
-        #'DenseNet201_sc_centstd': prepare_model(DenseNet201, input_shape, n_classes, mode='scale_std'),
-        #'InceptionResNetV2_sc_samplwise': prepare_model(InceptionResNetV2, input_shape, n_classes, mode='sample_wise_scaling'),
+
+        #'my_ResNet50_sc_center': Resnet50_model(input_shape, n_classes=n_classes, mode='centering')
+        'ResNet50V2': prepare_model(ResNet50V2, input_shape, n_classes, mode='sample_wise_scaling'),
+        'InceptionResNetV2': prepare_model(InceptionResNetV2, input_shape, n_classes, mode='sample_wise_scaling'),
+        #'InceptionV3': prepare_model(InceptionV3, input_shape, n_classes, mode='sample_wise_scaling'),
+        #'LAB_2path_InceptionV3': lab_two_path_inception_v3(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
+        #'LAB_2path_InceptionResNetV2': lab_two_path_inceptionresnet_v2(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
+
+        'DenseNet201': prepare_model(DenseNet201, input_shape, n_classes, mode='scale_std'),
         #'EfficientNetB3': prepare_model(EfficientNetB3, input_shape, n_classes, mode='scale_std'),
-        #'EfficientNetV2B3': prepare_model(EfficientNetV2B3, input_shape, n_classes, mode='scale_std'),
+        'EfficientNetV2B3': prepare_model(EfficientNetV2B3, input_shape, n_classes, mode='scale_std'),
         #'EfficientNetV2S': prepare_model(EfficientNetV2S, input_shape, n_classes, mode='scale_std'),
-        # scale_std -> as in transformers
 
-        #'LAB_2path_InceptionResNet_V2': lab_two_path_inceptionresnet_v2(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
-
-        'VIT': prepare_model(TFViTModel.from_pretrained("google/vit-base-patch16-224-in21k"), input_shape, n_classes, mode='scale_std', transformer=True),
-
-        # SwinForImageClassification.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
-        #"VIT_HF": TFViTForImageClassification.from_pretrained("google/vit-base-patch16-224-in21k", num_labels=n_classes, id2label=id2label,label2id=label2id)
+        #'VIT': prepare_model(TFViTModel.from_pretrained("google/vit-base-patch16-224"), input_shape, n_classes, transformer=True),
+        #'Swin': prepare_model(TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224"), input_shape, n_classes, transformer=True),
+        #"augm_ConvNext_224_transfer": prepare_model(ConvNeXtSmall, input_shape, n_classes, transfer=True),
+        #"ConvNext_HF": prepare_model(TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), input_shape, n_classes, transformer=True),
+        
     }
     return models_dict
-
-# most common type of pixel scaling involves centering pixel values per-channel,
-# perhaps followed by some type of normalization.

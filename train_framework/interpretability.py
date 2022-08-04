@@ -104,3 +104,92 @@ def save_and_display_gradcam(args, model, x_test, n_img, model_metrics_dir, alph
 
     if args.wandb:
         wandb.run.log({TABLE_NAME : grad_cam_table})
+
+
+
+# def saliency_mals(args, model, x_test, y_test):
+
+#from vis.visualization import visualize_saliency
+#
+#def get_feature_maps(model, layer_id, input_image):
+#
+#    model_ = tf.keras.models.Model(inputs=[model.inputs],
+#                outputs=[model.layers[layer_id].output]
+#    )
+#    return model_.predict(np.expand_dims(input_image,
+#                                         axis=0))[0,:,:,:].transpose((2,0,1))
+#
+#def plot_features_map(img_idx=None, layer_idx=[0, 2, 4, 6, 8, 10, 12, 16],
+#                      x_test=x_test, ytest=ytest, cnn=cnn):
+#    if img_idx == None:
+#        img_idx = randint(0, ytest.shape[0])
+#    input_image = x_test[img_idx]
+#    fig, ax = plt.subplots(3,3,figsize=(10,10))
+#    ax[0][0].imshow(input_image)
+#    ax[0][0].set_title('original img id {} - {}'.format(img_idx,
+#                                                        labels[ytest[img_idx][0]]))
+#    for i, l in enumerate(layer_idx):
+#        feature_map = get_feature_maps(cnn, l, input_image)
+#        ax[(i+1)//3][(i+1)%3].imshow(feature_map[:,:,0])
+#        ax[(i+1)//3][(i+1)%3].set_title('layer {} - {}'.format(l,
+#                                                               cnn.layers[l].get_config()['name']))
+#    return img_idx
+#
+#def plot_saliency(img_idx=None):
+#    img_idx = plot_features_map(img_idx)
+#
+#    grads = visualize_saliency(cnn_saliency, -1, filter_indices=ytest[img_idx][0],
+#                               seed_input=x_test[img_idx], backprop_modifier=None,
+#                               grad_modifier="absolute")
+#
+#    predicted_label = labels[np.argmax(cnn.predict(x_test[img_idx].reshape(1,32,32,3)),1)[0]]
+#
+#    fig, ax = plt.subplots(1,2, figsize=(10,5))
+#    ax[0].imshow(x_test[img_idx])
+#    ax[0].set_title(f'original img id {img_idx} - {labels[ytest[img_idx][0]]}')
+#    ax[1].imshow(grads, cmap='jet')
+#    ax[1].set_title(f'saliency - predicted {predicted_label}')
+
+
+#def visualize_intermediate_activations(layer_names, activations):
+#    assert len(layer_names)==len(activations), "Make sure layers and activation values match"
+#    images_per_row=16
+#
+#    for layer_name, layer_activation in zip(layer_names, activations):
+#        nb_features = layer_activation.shape[-1]
+#        size= layer_activation.shape[1]
+#
+#        nb_cols = nb_features // images_per_row
+#        grid = np.zeros((size*nb_cols, size*images_per_row))
+#
+#        for col in range(nb_cols):
+#            for row in range(images_per_row):
+#                feature_map = layer_activation[0,:,:,col*images_per_row + row]
+#                feature_map -= feature_map.mean()
+#                feature_map /= feature_map.std()
+#                feature_map *=255
+#                feature_map = np.clip(feature_map, 0, 255).astype(np.uint8)
+#
+#                grid[col*size:(col+1)*size, row*size:(row+1)*size] = feature_map
+#
+#        scale = 1./size
+#        plt.figure(figsize=(scale*grid.shape[1], scale*grid.shape[0]))
+#        plt.title(layer_name)
+#        plt.grid(False)
+#        plt.axis('off')
+#        plt.imshow(grid, aspect='auto', cmap='viridis')
+#    plt.show()
+## select all the layers for which you want to visualize the outputs and store it in a list
+#outputs = [layer.output for layer in model.layers[1:18]]
+#
+## Define a new model that generates the above output
+#vis_model = Model(model.input, outputs)
+#
+## store the layer names we are interested in
+#layer_names = []
+#for layer in outputs:
+#    layer_names.append(layer.name.split("/")[0])
+#
+#
+#print("Layers that will be used for visualization: ")
+#print(layer_names)

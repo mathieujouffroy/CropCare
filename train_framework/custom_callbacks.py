@@ -5,6 +5,7 @@ from sklearn.metrics import roc_auc_score
 from tensorflow.keras.callbacks import Callback
 import numpy as np
 
+
 class RocAUCScore(Callback):
     def __init__(self, training_data, validation_data):
         self.x = np.concatenate([x for x, y in training_data], axis=0)
@@ -38,6 +39,7 @@ class ValLogImg(Callback):
 
     val_data = np.concatenate([x for x, y in self.validation_set], axis=0)
     val_labels = np.concatenate([y for x, y in self.validation_set], axis=0)
+
     #val_data, val_labels = np.vstack(val_data), np.vstack(val_labels)
 
     # generate predictions for the given nbr of validation data batches
@@ -46,17 +48,20 @@ class ValLogImg(Callback):
     max_preds = val_probs.argmax(axis=1)
 
     ## log validation predictions alongside the run
+    #columns=["id", "image", "guess", "truth"]
     columns=["image", "guess", "truth"]
     for a in self.class_names:
       columns.append("score_" + a)
     predictions_table = wandb.Table(columns = columns)
 
     ## log image, predicted and actual labels, and all scores
+    #for filepath, img, top_guess, scores, truth in zip(self.generator.filenames,
     for img, top_guess, scores, truth in zip(val_data,
                                                        max_preds,
                                                        val_probs,
                                                        true_ids):
-
+      #img_id = filepath.split('/')[-1].split(".")[0]
+      #row = [img_id, wandb.Image(img), self.class_names[top_guess], self.class_names[truth]]
       row = [wandb.Image(img), self.class_names[top_guess], self.class_names[truth]]
       for s in scores.tolist():
         row.append(np.round(s, 4))

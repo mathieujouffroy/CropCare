@@ -5,10 +5,7 @@ from keras import backend as K
 #from keras.preprocessing.image import ImageDataGenerator
 #from framework.utils import *
 import multiprocessing
-import datasets
-from transformers import ViTFeatureExtractor
-from transformers import DefaultDataCollator
-
+import gc
 
 @tf.function
 def get_mean_std(train_set):
@@ -35,41 +32,23 @@ def encode_categorical(img, label, n_classes):
     label = tf.one_hot(label, n_classes,  dtype='uint8')
     return img, label
 
-
 @tf.function
-def prepare_input_shape(img, label, n_classes):
-    """
-    Prepare input shape for the model.
-    """
-    #if img.shape[0] != 224:
-    #    img = tf.image.resize(img, (224, 224))
-    label = tf.one_hot(label, n_classes,  dtype='uint8')
+def to_vector(img, label):
+    label = tf.expand_dims(label, axis=1)
     return img, label
 
-
 #@tf.function
-def prep_ds_input(args, ds, set_type):
-    print(f"NBR TRAIN EXAMPLES: {args.len_train}")
+def prep_ds_input(args, ds, set_len):
     N_CPUS = multiprocessing.cpu_count()
     print(f"NBR CPUS: {N_CPUS}")
-    if set_type == 'train':
-        ds = ds.map(lambda elem, label: prepare_input_shape(
-            elem, label, args.n_classes), num_parallel_calls=N_CPUS)\
-            .shuffle(args.len_train, seed=args.seed)
-    else:
-        ds = ds.map(lambda elem, label: prepare_input_shape(
-            elem, label, args.n_classes), num_parallel_calls=N_CPUS)\
-            .shuffle(args.len_valid, seed=args.seed)
-
     if args.transformer:
+        #ds = ds.map(lambda elem, label: to_vector(
+        #            elem, label), num_parallel_calls=N_CPUS)
         ds = ds.prefetch(tf.data.AUTOTUNE)
     else:
-        ds = ds.batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
-
-        for elem, label in ds.take(1):
-            print(f"elem shape is: {elem.shape}")
-            print(f"label shape is: {label.shape}")
-
+        ds = ds.map(lambda elem, label: encode_categorical(
+                    elem, label, args.n_classes), num_parallel_calls=N_CPUS)
+        ds = ds.shuffle(set_len, seed=args.seed).batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
 
 
@@ -90,17 +69,25 @@ def preprocess_image(tensor_img, mode='centering'):
         Preprocessed tensor.
     """
 
-    train_mean = tf.convert_to_tensor(
-        [118.933, 124.707, 104.610], dtype=tf.float32)
-    train_std = tf.convert_to_tensor(
-        [50.728, 44.546, 55.380], dtype=tf.float32)
     tensor_img = tf.cast(tensor_img, tf.float32, name=None)
+
+    mean_arr = [118.94, 124.72, 104.59]
+    std_arr = [49.35, 42.97, 54.13]
+    augm_mean_arr = [118.14, 124.61, 104.01]
+    augm_std_arr = [49.30, 42.62, 54.95]
+    augmlab_mean_arr = [129.75, 122.14, 138.48]
+    augmlab_std_arr = [44.66, 12.08, 15.12]
+
+    train_mean = tf.convert_to_tensor(augm_mean_arr, dtype=tf.float32)
+    train_std = tf.convert_to_tensor(augm_std_arr, dtype=tf.float32)
+    # TRANSFORMERS MODELS -> apply same preprocessing -> size = 224
+    ## IMAGENET WEIGHTS -> when using pretrained models 
+    #train_mean = tf.convert_to_tensor([123.675, 116.28, 103.53], dtype=tf.float32)
+    #train_std = tf.convert_to_tensor([58.395, 57.12, 0.225], dtype=tf.float32)
+    
 
     data_format = K.image_data_format()
     assert data_format == 'channels_last'
-
-    if mode == 'no':
-        return tensor_img
 
     if mode == 'sample_wise_scaling':
         print("scale pixels between -1 and 1")
@@ -156,43 +143,3 @@ def check_preprocessing(args, validation_set, cast_type):
         # TF image resize returns floats -> cast to uint to
         plt.imshow(tf.cast(img, cast_type))
         plt.show()
-
-
-def process(examples):
-    feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-    examples.update(feature_extractor(examples['img'], ))
-    return examples
-
-
-def create_hf_ds(args, images, labels):
-    features=datasets.Features({
-        "img": datasets.Image(),
-        # ClassLabel feature type is for single-label multi-class classification
-        # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
-        "label": datasets.features.ClassLabel(names=args.class_names)
-    })
-    ds = datasets.Dataset.from_dict(
-        {"img": images, "label": labels}, features=features)
-
-    # TEST : 'facebook/deit-base-patch16-224'
-    # swin -> microsoft/swin-tiny-patch4-window7-224
-    feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-    data_collator = DefaultDataCollator(return_tensors="tf")
-
-    ds = ds.rename_column("label", "labels")
-    ds = ds.map(process, batched=True)
-    #ds = ds.shuffle(seed=args.seed)
-
-    tf_dataset = ds.to_tf_dataset(
-       columns=['pixel_values'],
-       label_cols=["labels"],
-       collate_fn=data_collator,
-       batch_size=args.batch_size)
-
-    for elem, label in tf_dataset.take(1):
-        img = elem[0].numpy()
-        print(f"element shape is {elem.shape}, type is {elem.dtype}")
-        print(f"image shape is {img.shape}, type: {img.dtype}")
-        print(f"label shape is {label.shape} type: {label.dtype}")
-
-    return tf_dataset

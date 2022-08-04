@@ -120,6 +120,28 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
         wandb.run.log({rc_name: plt})
 
 
+#def log_wandb_table(args, x_test, y_test, y_pred, y_probs):
+#    TEST_TABLE_NAME = "test_result"
+#    columns=["image", "guess", "truth"]
+#    for a in args.class_names:
+#      columns.append("score_" + a)
+#    predictions_table = wandb.Table(columns = columns)
+#
+#    ## log image, predicted and actual labels, and all scores
+#    #for filepath, img, top_guess, scores, truth in zip(self.generator.filenames,
+#    for img, top_guess, scores, truth in zip(x_test,
+#                                                       y_pred,
+#                                                       y_probs,
+#                                                       y_test):
+#      #img_id = filepath.split('/')[-1].split(".")[0]
+#      #row = [img_id, wandb.Image(img), self.class_names[top_guess], self.class_names[truth]]
+#      row = [wandb.Image(img), args.class_names[top_guess], args.class_names[truth]]
+#      for s in scores.tolist():
+#        row.append(np.round(s, 4))
+#      predictions_table.add_data(*row)
+#    wandb.run.log({TEST_TABLE_NAME : predictions_table})
+
+
 def compute_training_metrics(args, model, test_dataset, m_type='train'):
     """
     Compute training metrics for model evaluation.
@@ -208,11 +230,11 @@ def compute_training_metrics(args, model, test_dataset, m_type='train'):
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                    model_metrics_dir, m_type)
+    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                model_metrics_dir, m_type)
 
-    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                     model_metrics_dir, m_type)
+    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                 model_metrics_dir, m_type)
 
     # MODEL INTERPRETABILITY
     save_and_display_gradcam(args, model, x_test, 5, model_metrics_dir)

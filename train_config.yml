@@ -1,0 +1,64 @@
+#
+# YAML configuration file for train.py
+#
+
+# the random seed, for reproducibility
+seed: 42
+
+# Images shape 
+input_shape: !!python/tuple [224, 224, 3]
+
+# the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
+class_type: 'disease'
+
+# Option to use class weights for imbalanced dataset
+class_weights: True
+
+# careful not to use a too large batch size, might lead to OOM errors
+batch_size: 32
+
+# Total number of training epochs to perform.
+#n_epochs: 7
+n_epochs: 20
+
+# the optimizer to use
+optimizer: 'adam'
+
+# the learning rate for the optimizer
+learning_rate: 0.001
+#learning_rate: 0.00001
+
+eval_during_training: False
+
+# Option to print all warnings related to data processing
+verbose: True
+
+# Option to use wandb for logging
+wandb: True
+#wandb: False
+
+# Option to overwrite the content of the output directory
+overwrite_output_dir: True
+
+# Option to use PolyLoss as loss function
+polyloss: False
+
+#transformer: True
+transformer: False
+
+# the path to the directory of the dataset
+dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_224.h5'
+fe_dataset: '../resources/datasets/transformers_ds_224/vit'
+#fe_dataset: '../resources/datasets/transformers_ds_224/convnext'
+
+# Output directory where the model checkpoints will be written
+output_dir: 'experiments/comp-top-k'  # -> all augmented
+#output_dir: 'experiments/eval_models_pl_disease'
+#output_dir: 'experiments/test-scaling'
+
+mean_arr: [118.94, 124.72, 104.59]
+std_arr: [49.35, 42.97, 54.13]
+augm_mean_arr: [118.14, 124.61, 104.01]
+augm_std_arr: [49.30, 42.62, 54.95]
+augmlab_mean_arr: [129.75, 122.14, 138.48]
+augmlab_std_arr: [44.66, 12.08, 15.12]

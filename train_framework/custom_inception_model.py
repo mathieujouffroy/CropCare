@@ -7,6 +7,14 @@ from tensorflow.keras.utils import get_file
 from preprocess_tensor import preprocess_image
 
 # LAB
+# smart resize is enabled.
+# train shape is : (32571, 224, 224, 3)
+# validation shape is : (10858, 224, 224, 3)
+# test shape is : (10876, 224, 224, 3)
+# Channel  0  min: 0.0         max: 1.0
+# Channel  1  min: 0.19593212  max: 0.88375795
+# Channel  2  min: 0.24579802  max: 0.9470912
+#
 # Model               1st & 2nd Layers            3rd Layer
 # baseline                 32                        64
 # 20 % L + 80 % AB        6 — 26                  13 — 51
@@ -136,7 +144,7 @@ def lab_two_path_inception_v3(input_shape, n_classes, mode,
                           name='lab_3x3ababab')
     ab_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_ab')(ab_branch)
-
+    
     x = tfl.Concatenate(axis=channel_axis,
                         name='concat_first_block_lab')([l_branch, ab_branch])
     x = conv2d_bn(x, 80, 1, 1, padding='valid',  name='concat_1x1')
@@ -431,13 +439,13 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, mode,
                           name='lab_3x3ababab')
     ab_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_ab')(ab_branch)
-
+    
     x = tfl.Concatenate(axis=channel_axis,
                         name='concat_first_block_lab')([l_branch, ab_branch])
     x = conv2d_bn_ir(x, 80, 1, padding='valid',  name='concat_1x1')
     x = conv2d_bn_ir(x, 192, 3, padding='valid', name='concat_3x3')
     x = tfl.MaxPooling2D((3, 3), strides=(2, 2), name='concat_max')(x)
-
+    
     # Mixed 5b (Inception-A block): 35 x 35 x 320
     branch_0 = conv2d_bn_ir(x, 96, 1)
     branch_1 = conv2d_bn_ir(x, 48, 1)

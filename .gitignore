@@ -4,8 +4,7 @@ __pycache__/
 /**/__pycache__
 
 resources/experiments
-resources/Plant_leave_diseases_dataset_without_augmentation
-resources/Plant_leave_diseases_dataset_with_augmentation
+resources/datasets
 resources/small_test
 resources/wandb
 Test

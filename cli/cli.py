@@ -60,7 +60,7 @@ def dump_training_stats(X_train, label_type, prefix):
     }
     print(f"X train mean : {X_train_mean_rgb}")
     print(f"X train std : {X_train_std_rgb}")
-    with open(f"{prefix}{label_type}_train_stats_224.json", "w") as outfile:
+    with open(f"{prefix}{label_type}_train_stats_128.json", "w") as outfile:
         json.dump(train_stats, outfile, indent=4)
 
 def main():
@@ -82,18 +82,18 @@ def main():
                 assert label_type in ['plant', 'disease', 'healthy', 'gen_disease']
                 images, labels = plant_data.get_relevant_images_labels(label_type)
 
-                noseg_images = resize_images(images, (224, 224))
+                noseg_images = resize_images(images, (128, 128))
                 X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
                 X_train, X_valid, X_test = X_splits
                 y_train, y_valid, y_test = y_splits
                 # Get stats from training set for data preprocessing
                 dump_training_stats(X_train, label_type, prefix='augm_')
 
-                store_hdf5(f"augm_{label_type}_{plant_data.img_nbr}_ds_224.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+                store_hdf5(f"augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
                 
                 # CREATE TRANSFORMER DATASET
                 #print(f"label type: {label_type}")
-                create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
+                #create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
 
                 
 
@@ -130,12 +130,12 @@ def main():
                         continue
 
                 if options in ['1', '2']:
-                    dataset_name = f"segm_{label_type}_{plant_data.img_nbr}_ds_224.h5"
+                    dataset_name = f"segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
                     X_train, X_valid, X_test = X_splits
                     y_train, y_valid, y_test = y_splits
-                    X_train_seg = resize_images(train_seg, (224, 224))
-                    X_val_seg = resize_images(val_seg, (224, 224))
-                    X_test_seg = resize_images(test_seg, (224, 224))
+                    X_train_seg = resize_images(train_seg, (128, 128))
+                    X_val_seg = resize_images(val_seg, (128, 128))
+                    X_test_seg = resize_images(test_seg, (128, 128))
                     # Get stats from training set for data preprocessing
                     dump_training_stats(X_train_seg, label_type, prefix='segm_')
                     store_hdf5(dataset_name,  X_train_seg, X_val_seg, X_test_seg, y_train, y_valid, y_test)
