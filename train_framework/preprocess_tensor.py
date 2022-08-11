@@ -23,7 +23,7 @@ def get_mean_std(train_set):
 
 @tf.function
 def resize_img(img, label):
-    img = tf.image.resize(img, (128, 128))
+    img = tf.image.resize(img, (299, 299))
     return img, label
 
 
@@ -71,15 +71,18 @@ def preprocess_image(tensor_img, mode='centering'):
 
     tensor_img = tf.cast(tensor_img, tf.float32, name=None)
 
-    mean_arr = [118.94, 124.72, 104.59]
-    std_arr = [49.35, 42.97, 54.13]
-    augm_mean_arr = [118.14, 124.61, 104.01]
-    augm_std_arr = [49.30, 42.62, 54.95]
-    augmlab_mean_arr = [129.75, 122.14, 138.48]
-    augmlab_std_arr = [44.66, 12.08, 15.12]
+    #mean_arr = [118.94, 124.72, 104.59]
+    #std_arr = [49.35, 42.97, 54.13]
+    #augm_mean_arr = [118.14, 124.61, 104.01]
+    #augm_std_arr = [49.30, 42.62, 54.95]
+    #lab_augm_mean_arr = [129.75, 122.14, 138.48]
+    #lab_augm_std_arr = [44.66, 12.08, 15.12]
 
-    train_mean = tf.convert_to_tensor(augm_mean_arr, dtype=tf.float32)
-    train_std = tf.convert_to_tensor(augm_std_arr, dtype=tf.float32)
+    augm_mean_arr_128 = [118.26, 124.73, 104.13]
+    augm_std_arr_128 = [48.91, 42.17, 53.59]
+
+    train_mean = tf.convert_to_tensor(augm_mean_arr_128, dtype=tf.float32)
+    train_std = tf.convert_to_tensor(augm_std_arr_128, dtype=tf.float32)
     # TRANSFORMERS MODELS -> apply same preprocessing -> size = 224
     ## IMAGENET WEIGHTS -> when using pretrained models 
     #train_mean = tf.convert_to_tensor([123.675, 116.28, 103.53], dtype=tf.float32)

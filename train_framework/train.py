@@ -15,6 +15,7 @@ from tensorflow.keras import callbacks
 from prep_data_train import load_split_hdf5, create_hf_ds
 from preprocess_tensor import prep_ds_input
 from custom_callbacks import RocAUCScore
+from custom_loss import poly_loss, poly1_cross_entropy_label_smooth
 from sklearn.utils.class_weight import compute_class_weight
 #import tensorflow_addons as tfa
 from datasets import load_from_disk
@@ -66,7 +67,7 @@ def generate_class_weights(y_train, class_type, logger):
 
 
 
-def train_model(args, model_tupl, train_set, valid_set, class_weights):
+def train_model(args, m_name, model, train_set, valid_set, class_weights):
     """
     Training model on train
     Parameters:
@@ -78,10 +79,9 @@ def train_model(args, model_tupl, train_set, valid_set, class_weights):
     Returns:
         model(tensorflow.Model):
     """
-    model = model_tupl[1]
 
     # Prepare optimizer
-    print(f"model --> {model}")
+    print(f"model : {model}")
     if args.transformer:
         lr = 3e-5
         optimizer, lr_schedule = create_optimizer(
@@ -97,13 +97,12 @@ def train_model(args, model_tupl, train_set, valid_set, class_weights):
         elif args.optimizer == 'adam':
             optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
 
-    model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
+    model.compile(loss=poly_loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
-    tb_log_dir = os.path.join(args.model_dir, f'TB_fit')
-    checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
+    #checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        callbacks.TensorBoard(histogram_freq=1, log_dir=tb_log_dir),
+        callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir),
         callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.5, verbose=1),
         callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
         #callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m",
@@ -118,7 +117,7 @@ def train_model(args, model_tupl, train_set, valid_set, class_weights):
         wandb.define_metric("val_f1_m", summary="max")
 
     logger.info("\n\n")
-    logger.info(f"  =========== TRAINING MODEL {model_tupl[0]} ===========")
+    logger.info(f"  =========== TRAINING MODEL {m_name} ===========")
     logger.info(f"  Loss = {args.loss}")
     logger.info(f"  Optimizer = {optimizer}")
     logger.info(f"  learning rate = {lr}")
@@ -169,7 +168,10 @@ def main():
                 tf.keras.metrics.SparseTopKCategoricalAccuracy(5, name="top-5-accuracy")
             ]
         else:
-            args.loss = tf.keras.losses.CategoricalCrossentropy()
+            if args.polyloss:
+                args.loss = poly1_cross_entropy_label_smooth
+            else:
+                args.loss = tf.keras.losses.CategoricalCrossentropy()
             args.metrics = [
                 tf.keras.metrics.CategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top-5-accuracy"),
@@ -200,8 +202,8 @@ def main():
         with open(args.label_map_path) as f:
             id2label = json.load(f)
 
-    args.class_names = [str(v) for k,v in id2label.items()]
-    print(f"  Class names = {args.class_names}")
+        args.class_names = [str(v) for k,v in id2label.items()]
+        print(f"  Class names = {args.class_names}")
 
     # Load the dataset
     X_train, y_train = load_split_hdf5(args.dataset, 'train')
@@ -253,9 +255,9 @@ def main():
 
     # Retrieve Models to evaluate
     if args.n_classes == 2:
-        models_dict = get_models(args.n_classes-1, args.input_shape)
+        models_dict = get_models(args.n_classes-1, args.input_shape, args.models)
     else:
-        models_dict = get_models(args.n_classes, args.input_shape, id2label)
+        models_dict = get_models(args.n_classes, args.input_shape, args.models)
 
     # Set training parameters
     args.nbr_train_batch = int(math.ceil(args.len_train / args.batch_size))
@@ -275,35 +277,60 @@ def main():
     logger.info(f"  Class weights = {class_weights}")
 
     # Train and evaluate
-    for model_d in models_dict.items():
-        tf.keras.backend.clear_session()
+    convs = []
+    for m_name, model in models_dict.items():
+        print(model.summary())
+        print(model.inputs)
+        tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
 
+        tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs
         date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
-        args.model_dir = os.path.join(args.output_dir, f"{model_d[0]}_{date}")
+        if args.polyloss:
+            new_name = m_name+"_poly"
+        args.model_dir = os.path.join(args.output_dir, f"{new_name}_{date}")
         if not os.path.exists(args.model_dir):
             os.makedirs(args.model_dir)
         
         # define wandb run and project
         if args.wandb:
             dir_name = args.output_dir.split('/')[-1]
-            project_name = f"{dir_name }_{args.class_type}-classif"
+            project_name = f"cropdis-{dir_name}"
             cfg = wandb_cfg(args, args.n_training_steps)
             run = wandb.init(project=project_name,
-                             job_type="train", name=model_d[0], config=cfg, reinit=True)
+                             job_type="train", name=new_name, config=cfg, reinit=True)
             assert run is wandb.run
 
-        trained_model = train_model(args, model_d, train_set, valid_set, class_weights)
-
+        trained_model = train_model(args, new_name, model, train_set, valid_set, class_weights)
+        
         if args.eval_during_training:
+            print(trained_model.history)
+            X_test, y_test = load_split_hdf5(args.dataset, 'test')
+            # Set parameters
+            args.len_test = len(X_test)
+            args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
+
+            if args.transformer:
+                test_set = load_from_disk(f'{args.fe_dataset}/test')
+                data_collator = DefaultDataCollator(return_tensors="tf")
+                print(test_set.features["labels"].names)
+                test_set = test_set.to_tf_dataset(
+                            columns=['pixel_values'],
+                            label_cols=["labels"],
+                            shuffle=True,
+                            batch_size=32,
+                            collate_fn=data_collator)
+            else:
+                test_set = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+
+            test_set = prep_ds_input(args, test_set, args.len_test)
             logger.info("\n")
             logger.info(f"  ***** Evaluating on Validation set *****")
-            compute_training_metrics(args, trained_model, valid_set)
+            compute_training_metrics(args, trained_model, m_name, test_set)
 
         if args.wandb:
             wandb.run.finish()
             print("\n\n--- FINISH WANDB RUN ---\n")
-
 
 if __name__ == "__main__":
     main()

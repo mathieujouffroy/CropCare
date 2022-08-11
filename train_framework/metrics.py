@@ -142,7 +142,7 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
 #    wandb.run.log({TEST_TABLE_NAME : predictions_table})
 
 
-def compute_training_metrics(args, model, test_dataset, m_type='train'):
+def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
     """
     Compute training metrics for model evaluation.
 
@@ -150,10 +150,10 @@ def compute_training_metrics(args, model, test_dataset, m_type='train'):
         args
     """
 
-    if m_type == "eval_test":
-        model_metrics_dir = os.path.join(args.model_dir, "metrics_test")
+    if m_type == "test":
+        model_metrics_dir = os.path.join(args.output_dir, "metrics_test")
     else:
-        model_metrics_dir = os.path.join(args.model_dir, "metrics_train")
+        model_metrics_dir = os.path.join(args.output_dir, "metrics_train")
 
     if not os.path.exists(model_metrics_dir):
         os.makedirs(model_metrics_dir)
@@ -164,78 +164,84 @@ def compute_training_metrics(args, model, test_dataset, m_type='train'):
     with open(args.label_map_path) as f:
         CLASS_INDEX = json.load(f)
 
+    print(x_test.shape)
+
     #print('\n\n ==== CLASS INDEX ==== \n')
     #print(CLASS_INDEX)
 
     results = model.evaluate(x_test, y_test, verbose=0)
     logger.info(f"  Result of evaluation:")
-    logger.info(f"  loss: {results[0]}")
-    logger.info(f"  acc: {results[1]}")
-    logger.info(f"  tp: {results[2]}")
-    logger.info(f"  fp: {results[3]}")
-    logger.info(f"  tn: {results[4]}")
-    logger.info(f"  fn: {results[5]}")
-    logger.info(f"  f1: {results[6]}")
-    logger.info(f"  precision: {results[7]}")
-    logger.info(f"  recall: {results[8]}")
+    logger.info(f"  {results}")
+    #logger.info(f"  loss: {results[0]}")
+    #logger.info(f"  acc: {results[1]}")
+    #logger.info(f"  tp: {results[2]}")
+    #logger.info(f"  fp: {results[3]}")
+    #logger.info(f"  tn: {results[4]}")
+    #logger.info(f"  fn: {results[5]}")
+    #logger.info(f"  f1: {results[6]}")
+    #logger.info(f"  precision: {results[7]}")
+    #logger.info(f"  recall: {results[8]}")
 
     y_probs = model.predict(x_test)
     y_pred = y_probs.argmax(axis=-1)
+
     logger.info(f"  Shape of y_pred:{y_pred.shape}")
 
-    if args.loss == 'categorical_crossentropy':
+    if args.loss != 'binary_crossentropy':
         y_test = y_test.argmax(axis=-1)
         truth_label_names = [CLASS_INDEX[str(y)] for y in y_test]
         pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
 
+    print(y_pred.shape)
+    print(y_test.shape)
 
-    cm = pd.DataFrame(confusion_matrix(y_test, y_pred),
-                      index=CLASS_INDEX.values(), columns=CLASS_INDEX.values())
-
-    cr = classification_report(
-        truth_label_names, pred_label_names, output_dict=True)
-    cr_df = pd.DataFrame(cr).transpose()
-
-    accuracy = accuracy_score(y_test, y_pred)
-    f1_sc = f1_score(y_test, y_pred, average='weighted')
-    matt_score = matthews_corrcoef(y_test, y_pred)
-    logger.info(f"  ======= METRICS =======")
-    logger.info(f"  accuracy = {accuracy}")
-    logger.info(f"  f1_score = {f1_sc}")
-    logger.info(f"  matthews_corrcoef = {matt_score}")
-    logger.info(f"  classification_report:\n\n{cr}\n\n")
-
-    fig, ax = plt.subplots(figsize=(16, 20))
-    ax = sns.heatmap(cm, annot=True, cmap='Blues', fmt='.3g')
-    ax.set_ylabel('Actual Values ')
-    ax.xaxis.set_ticklabels(CLASS_INDEX.values())
-    ax.yaxis.set_ticklabels(CLASS_INDEX.values())
-    plt.xticks(rotation=90)
-    plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
-
-    # Display the visualization of the Confusion Matrix.
-    if args.wandb:
-        columns = ['classes', 'precision', 'f1_score', 'support']
-        cr_df = cr_df.reset_index()
-        cr_wd = wandb.Table(columns=columns, data=cr_df)
-        if m_type == 'eval':
-            cm_name = "CONFUSION_MATRIX_TEST"
-            cr_name = "CLASSIFICATION_REPORT_TEST"
-        else:
-            cm_name = "CONFUSION_MATRIX_VAL"
-            cr_name = "CLASSIFICATION_REPORT_VALID"
-        wandb.run.log({cr_name: cr_wd})
-        wandb.run.log({cm_name: wandb.Image(fig)})
-        wandb.run.log({"conf_mat_val": wandb.plot.confusion_matrix(
-            preds=y_pred, y_true=y_test,
-            class_names=list(CLASS_INDEX.values()))})
-
+    #cm = pd.DataFrame(confusion_matrix(y_test, y_pred),
+    #                  index=CLASS_INDEX.values(), columns=CLASS_INDEX.values())
+#
+    #cr = classification_report(
+    #    truth_label_names, pred_label_names, output_dict=True)
+    #cr_df = pd.DataFrame(cr).transpose()
+#
+    #accuracy = accuracy_score(y_test, y_pred)
+    #f1_sc = f1_score(y_test, y_pred, average='weighted')
+    #matt_score = matthews_corrcoef(y_test, y_pred)
+    #logger.info(f"  ======= METRICS =======")
+    #logger.info(f"  accuracy = {accuracy}")
+    #logger.info(f"  f1_score = {f1_sc}")
+    #logger.info(f"  matthews_corrcoef = {matt_score}")
+    #logger.info(f"  classification_report:\n\n{cr}\n\n")
+#
+    #fig, ax = plt.subplots(figsize=(16, 20))
+    #ax = sns.heatmap(cm, annot=True, cmap='Blues', fmt='.3g')
+    #ax.set_ylabel('Actual Values ')
+    #ax.xaxis.set_ticklabels(CLASS_INDEX.values())
+    #ax.yaxis.set_ticklabels(CLASS_INDEX.values())
+    #plt.xticks(rotation=90)
+    #plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
+#
+    ## Display the visualization of the Confusion Matrix.
+    #if args.wandb:
+    #    columns = ['classes', 'precision', 'f1_score', 'support']
+    #    cr_df = cr_df.reset_index()
+    #    cr_wd = wandb.Table(columns=columns, data=cr_df)
+    #    if m_type == 'eval':
+    #        cm_name = "CONFUSION_MATRIX_TEST"
+    #        cr_name = "CLASSIFICATION_REPORT_TEST"
+    #    else:
+    #        cm_name = "CONFUSION_MATRIX_VAL"
+    #        cr_name = "CLASSIFICATION_REPORT_VALID"
+    #    wandb.run.log({cr_name: cr_wd})
+    #    wandb.run.log({cm_name: wandb.Image(fig)})
+    #    wandb.run.log({"conf_mat_val": wandb.plot.confusion_matrix(
+    #        preds=y_pred, y_true=y_test,
+    #        class_names=list(CLASS_INDEX.values()))})
+#
     #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
     #                model_metrics_dir, m_type)
-
+#
     #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
     #                 model_metrics_dir, m_type)
 
     # MODEL INTERPRETABILITY
-    save_and_display_gradcam(args, model, x_test, 5, model_metrics_dir)
+    save_and_display_gradcam(args, model, m_name, x_test, 5, model_metrics_dir)
     # DISPLAY SALIENCY MAPS

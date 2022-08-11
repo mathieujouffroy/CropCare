@@ -3,12 +3,13 @@ import random
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras
+from tensorflow import keras
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from IPython.display import Image, display
 
 
-def make_gradcam_heatmap(model, img_array, pred_index=None):
+def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
     """
     GRADient-weighted Class Activation Mapping (Grad-CAM)
 
@@ -19,18 +20,47 @@ def make_gradcam_heatmap(model, img_array, pred_index=None):
     """
     img_array = img_array[np.newaxis, :]
 
-    last_conv_layer_name = "last_conv"
+    if 'VGG16' in m_name:
+        last_conv_layer = "block5_conv3"
+    elif 'InceptionV3' in m_name:
+        last_conv_layer = "conv2d_296"
+    elif 'ResNet50V2' in m_name:
+        last_conv_layer = "conv5_block3_3_conv"
+    elif 'InceptionResNetV2' in m_name:
+        last_conv_layer = "conv_7b_ac"
+    elif 'Densenet201' in m_name:
+        last_conv_layer = "conv5_block32_2_conv"
+    elif 'EfficientNetV2B3' in m_name:
+        # efficientnetv2-b3
+        last_conv_layer = "top_conv"
+    else:
+        last_conv_layer = "last_conv"
+    
     model.layers[-1].activation = None
-    print(model.get_layer(last_conv_layer_name).output)
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
+    for layer in model.layers:
+        if "Functional" == layer.__class__.__name__:
+            convs = [l for l in layer.layers if l.name == last_conv_layer]
+    last_conv = convs[0]
+    
+    for layer in model.layers:
+        if "InputLayer" == layer.__class__.__name__:
+            input_layer = layer
+
+    print(last_conv)
+    print(last_conv.name)
+    print(model.summary)
+    
     grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(
-            last_conv_layer_name).output, model.output]
+        [model.inputs], [last_conv.output, model.output]
+        #[inputs], [last_conv.output, model.output]
     )
+    inputs = Keras.Input(shape=(128, 128, 3))
     # Then, we compute the gradient of the top predicted class for our input image
     # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
+        img_array = tf.cast(img_array, tf.float32)
         last_conv_layer_output, preds = grad_model(img_array)
         # watch the conv_output_values
         tape.watch(last_conv_layer_output)
@@ -60,9 +90,10 @@ def make_gradcam_heatmap(model, img_array, pred_index=None):
     return heatmap.numpy()
 
 
-def save_and_display_gradcam(args, model, x_test, n_img, model_metrics_dir, alpha=0.4):
+def save_and_display_gradcam(args, model, m_name, x_test, n_img, model_metrics_dir, alpha=0.4):
     print(f"Displaying Grad-CAM for {n_img} images")
     print(f"X test shape is : {x_test.shape}")
+    print(f"Model:{m_name}")
 
     img_ids = random.sample(range(x_test.shape[0]), n_img)
 
@@ -73,7 +104,7 @@ def save_and_display_gradcam(args, model, x_test, n_img, model_metrics_dir, alph
 
     for id in img_ids:
         img = x_test[id]
-        heatmap = make_gradcam_heatmap(model, img)
+        heatmap = make_gradcam_heatmap(model, m_name, img)
         # Rescale heatmap to a range 0-255
         heatmap = np.uint8(255 * heatmap)
         # Use jet colormap to colorize heatmap
@@ -90,11 +121,11 @@ def save_and_display_gradcam(args, model, x_test, n_img, model_metrics_dir, alph
         superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
         # Save the superimposed image
-        #superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")
+        superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")
 
         # Display Grad CAM
-        plt.imshow(superimposed_img)
-        plt.show()
+        #plt.imshow(superimposed_img)
+        #plt.show()
 
         if args.wandb:
             row = [wandb.Image(img), #,caption=np.argmax(predictions[i])),

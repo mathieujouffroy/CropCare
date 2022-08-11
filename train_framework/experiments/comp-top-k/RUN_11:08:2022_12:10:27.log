@@ -1,0 +1,33 @@
+08/11/2022 12:10:37 - INFO - __main__ -     labels: [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+ 24 25 26 27 28 29 30 31 32 33 34 35 36 37]
+08/11/2022 12:10:37 - INFO - __main__ -     SK class weights : [1.58796992 1.58796992 1.58796992 0.96491228 1.05763934 1.58796992
+ 1.51029748 1.58796992 1.33282847 1.36725578 1.58796992 1.34573722
+ 1.14832536 1.58796992 1.47620046 0.28834733 0.69128044 1.58796992
+ 1.58796992 1.07398932 1.58796992 1.58796992 1.58796992 1.58796992
+ 0.31197837 0.86504198 1.58796992 1.4324471  0.74652716 1.58796992
+ 0.9978267  0.83202017 1.58796992 0.89643463 0.94763764 1.13080259
+ 1.58796992 0.29642105]
+08/11/2022 12:11:02 - INFO - __main__ -     ---- Training Parameters ----
+
+YamlNamespace(augm_mean_arr=[118.14, 124.61, 104.01], augm_std_arr=[49.3, 42.62, 54.95], augmlab_mean_arr=[129.75, 122.14, 138.48], augmlab_std_arr=[44.66, 12.08, 15.12], batch_size=32, class_names=['apple_apple_scab', 'apple_black_rot', 'apple_cedar_apple_rust', 'apple_healthy', 'blueberry_healthy', 'cherry_healthy', 'cherry_powdery_mildew', 'corn_cercospora_leaf_spot gray_leaf_spot', 'corn_common_rust', 'corn_healthy', 'corn_northern_leaf_blight', 'grape_black_rot', 'grape_esca_(black_measles)', 'grape_healthy', 'grape_leaf_blight_(isariopsis_leaf_spot)', 'orange_haunglongbing_(citrus_greening)', 'peach_bacterial_spot', 'peach_healthy', 'pepper_bell_bacterial_spot', 'pepper_bell_healthy', 'potato_early_blight', 'potato_healthy', 'potato_late_blight', 'raspberry_healthy', 'soybean_healthy', 'squash_powdery_mildew', 'strawberry_healthy', 'strawberry_leaf_scorch', 'tomato_bacterial_spot', 'tomato_early_blight', 'tomato_healthy', 'tomato_late_blight', 'tomato_leaf_mold', 'tomato_septoria_leaf_spot', 'tomato_spider_mites two-spotted_spider_mite', 'tomato_target_spot', 'tomato_tomato_mosaic_virus', 'tomato_tomato_yellow_leaf_curl_virus'], class_type='disease', class_weights=True, dataset='../resources/datasets/augmentation/augm_disease_60343_ds_128.h5', eval_during_training=True, fe_dataset='../resources/datasets/transformers_ds_224/vit', input_shape=[128, 128, 3], label_map_path='../resources/label_maps/diseases_label_map.json', learning_rate=0.001, len_train=42240, len_valid=9051, loss=<function poly1_cross_entropy_label_smooth at 0x7f1e84290af0>, mean_arr=[118.94, 124.72, 104.59], metrics=[<keras.metrics.metrics.CategoricalAccuracy object at 0x7f1f13a83310>, <keras.metrics.metrics.TopKCategoricalAccuracy object at 0x7f1f13a837f0>, <function f1_m at 0x7f1f080fdca0>, <keras.metrics.metrics.Precision object at 0x7f1f13a83dc0>, <keras.metrics.metrics.Recall object at 0x7f1e8430b760>, <keras.metrics.metrics.AUC object at 0x7f1f01f0bd90>, <keras.metrics.metrics.AUC object at 0x7f1f081af2e0>], models=['pret_EfficientNetV2B3', 'InceptionResNetV2'], n_classes=38, n_epochs=1, n_training_steps=1320, nbr_train_batch=1320, optimizer='adam', output_dir='experiments/comp-top-k', overwrite_output_dir=True, polyloss=True, seed=42, std_arr=[49.35, 42.97, 54.13], transformer=False, verbose=True, wandb=False)
+
+
+08/11/2022 12:11:02 - INFO - __main__ -     ***** Running training *****
+08/11/2022 12:11:02 - INFO - __main__ -     train_set = <PrefetchDataset element_spec=(TensorSpec(shape=(None, 128, 128, 3), dtype=tf.uint8, name=None), TensorSpec(shape=(None, 38), dtype=tf.uint8, name=None))>
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr of class = 38
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr training examples = 42240
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr validation examples = 9051
+08/11/2022 12:11:02 - INFO - __main__ -     Batch size = 32
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr Epochs = 1
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr of training batch = 1320
+08/11/2022 12:11:02 - INFO - __main__ -     Nbr training steps = 1320
+08/11/2022 12:11:02 - INFO - __main__ -     Class weights = {0: 1.58796992481203, 1: 1.58796992481203, 2: 1.58796992481203, 3: 0.9649122807017544, 4: 1.0576393409785168, 5: 1.58796992481203, 6: 1.5102974828375286, 7: 1.58796992481203, 8: 1.3328284740628549, 9: 1.3672557778209362, 10: 1.58796992481203, 11: 1.3457372244169747, 12: 1.1483253588516746, 13: 1.58796992481203, 14: 1.4762004613126443, 15: 0.2883473274626254, 16: 0.6912804399057345, 17: 1.58796992481203, 18: 1.58796992481203, 19: 1.0739893211289093, 20: 1.58796992481203, 21: 1.58796992481203, 22: 1.58796992481203, 23: 1.58796992481203, 24: 0.311978374226332, 25: 0.8650419823878763, 26: 1.58796992481203, 27: 1.432447097124254, 28: 0.7465271641157966, 29: 1.58796992481203, 30: 0.9978267032032505, 31: 0.8320201701859439, 32: 1.58796992481203, 33: 0.8964346349745331, 34: 0.947637636290214, 35: 1.1308025914226054, 36: 1.58796992481203, 37: 0.296421052631579}
+08/11/2022 12:11:02 - INFO - __main__ -   
+
+
+08/11/2022 12:11:02 - INFO - __main__ -     =========== TRAINING MODEL pret_EfficientNetV2B3_poly ===========
+08/11/2022 12:11:02 - INFO - __main__ -     Loss = <function poly1_cross_entropy_label_smooth at 0x7f1e84290af0>
+08/11/2022 12:11:02 - INFO - __main__ -     Optimizer = <keras.optimizers.optimizer_v2.adam.Adam object at 0x7f1f9c556f10>
+08/11/2022 12:11:02 - INFO - __main__ -     learning rate = 0.001
+08/11/2022 12:11:02 - INFO - __main__ -   
+

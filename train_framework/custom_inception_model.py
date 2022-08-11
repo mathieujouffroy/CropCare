@@ -94,7 +94,7 @@ def conv2d_bn(x,
   return x
 
 
-def lab_two_path_inception_v3(input_shape, n_classes, mode,
+def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
                               weights=None,
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
@@ -240,25 +240,19 @@ def lab_two_path_inception_v3(input_shape, n_classes, mode,
         [branch1x1, branch7x7, branch7x7dbl, branch_pool], axis=channel_axis,
         name='mixed5')
 
-    # Classification block
-    x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
-    #x = tfl.Dropout(0.2)(x)
-    x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
+    if include_top:
+        # Classification block
+        x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
+        #x = tfl.Dropout(0.2)(x)
+        x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
 
     inputs = img_input
     # Create model.
     model = keras.models.Model(inputs, x, name=model_name)
 
     # Load weights.
-    if weights == 'imagenet':
-      weights_path = get_file(
-          'inception_v3_weights_tf_dim_ordering_tf_kernels.h5',
-          WEIGHTS_PATH,
-          cache_subdir='models',
-          file_hash='9a0d58056eeedaa3f26cb7ebd46da564')
-      model.load_weights(weights_path)
-    elif weights is not None:
-      model.load_weights(weights)
+    if weights is not None:
+        model.load_weights(weights)
 
     return model
 
@@ -389,7 +383,7 @@ def inception_resnet_block(x, scale, block_type, block_idx, activation="relu"):
     return x
 
 
-def lab_two_path_inceptionresnet_v2(input_shape, n_classes, mode,
+def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
                               weights=None,
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
@@ -508,26 +502,18 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, mode,
     # Final convolution block: 8 x 8 x 1536
     x = conv2d_bn_ir(x, 1536, 1, name='last_conv')
 
-    # Classification block
-    x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
-    #x = tfl.Dropout(0.2)(x)
-    x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
+    if include_top:
+        # Classification block
+        x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
+        #x = tfl.Dropout(0.2)(x)
+        x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
 
     inputs = img_input
     # Create model.
     model = keras.models.Model(inputs, x, name=model_name)
 
     # Load weights.
-    if weights == 'imagenet':
-        fname = ('inception_resnet_v2_weights_'
-                 'tf_dim_ordering_tf_kernels_notop.h5')
-        weights_path = get_file(
-            fname,
-            BASE_WEIGHT_URL + fname,
-            cache_subdir='models',
-            file_hash='d19885ff4a710c122648d3b5c3b684e4')
-        model.load_weights(weights_path)
-    elif weights is not None:
+    if weights is not None:
         model.load_weights(weights)
 
 
