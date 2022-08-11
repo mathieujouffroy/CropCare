@@ -9,6 +9,9 @@ resources/small_test
 resources/wandb
 Test
 
+train_framework/wandb
+train_framework/experiments
+
 .DS_Store
 .env
 *.h5
