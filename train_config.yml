@@ -6,7 +6,8 @@
 seed: 42
 
 # Images shape 
-input_shape: !!python/tuple [128, 128, 3]
+#input_shape: !!python/tuple [128, 128, 3]
+input_shape: !!python/tuple [256, 256, 3]
 
 # the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
 class_type: 'disease'
@@ -50,7 +51,8 @@ overwrite_output_dir: True
 transformer: False
 
 # the path to the directory of the dataset
-dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
+#dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
+dataset: '../resources/small_test/plant_dataset_209_split_sets.h5'
 fe_dataset: '../resources/datasets/transformers_ds_224/vit'
 
 # Output directory where the model checkpoints will be written

@@ -5,7 +5,7 @@ from tensorflow.keras.utils import get_file
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform
 from tensorflow.keras.applications import VGG16, ResNet50, ResNet50V2, Xception, InceptionV3, InceptionResNetV2, DenseNet201
-from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M, ConvNeXtSmall
+from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M #, ConvNeXtSmall
 from custom_inception_model import *
 from preprocess_tensor import preprocess_image
 from transformers import TFViTModel, TFViTForImageClassification, TFConvNextModel, TFConvNextForImageClassification, TFSwinModel, TFSwinForImageClassification
@@ -521,7 +521,7 @@ MODELS = {
 
     # TRANSFORMERS
     # Keras 
-    "pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
+    #"pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
     # HuggingFace 
     "ConvNext":{'model':TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), 'mode':None, 't_type':'transformer'},
     'VIT':{'model':TFViTModel.from_pretrained("google/vit-base-patch16-224"), 'mode':None, 't_type':'transformer'},

@@ -188,10 +188,10 @@ def main():
             ]
 
         if args.class_type == 'disease':
-            args.n_classes = 38
-            args.label_map_path = '../resources/label_maps/diseases_label_map.json'
-            #args.n_classes = 3
-            #args.label_map_path = '../resources/small_test/diseases_label_map.json'
+            #args.n_classes = 38
+            #args.label_map_path = '../resources/label_maps/diseases_label_map.json'
+            args.n_classes = 3
+            args.label_map_path = '../resources/small_test/diseases_label_map.json'
         elif args.class_type == 'plants':
             args.n_classes = 14
             args.label_map_path = '../resources/label_maps/plants_label_map.json'
@@ -277,11 +277,17 @@ def main():
     logger.info(f"  Class weights = {class_weights}")
 
     # Train and evaluate
-    convs = []
     for m_name, model in models_dict.items():
         print(model.summary())
         print(model.inputs)
-        tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
+        for layer in model.layers:
+            if "InputLayer" == layer.__class__.__name__:
+                print(f"in normal layers : {layer.name}")
+            if "Functional" == layer.__class__.__name__:
+                for _l in layer.layers:
+                    print(_l.name)
+
+    
 
         tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs

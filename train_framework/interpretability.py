@@ -42,18 +42,24 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
     for layer in model.layers:
         if "Functional" == layer.__class__.__name__:
             convs = [l for l in layer.layers if l.name == last_conv_layer]
+            inputs = [l for l in layer.layers if "input" in l.name]
     last_conv = convs[0]
+    #inputs = inputs[0]
+    #print(inputs)
     
     for layer in model.layers:
         if "InputLayer" == layer.__class__.__name__:
+            print(layer)
             input_layer = layer
 
     print(last_conv)
     print(last_conv.name)
     print(model.summary)
+    print(model.inputs)
     
     grad_model = tf.keras.models.Model(
-        [model.inputs], [last_conv.output, model.output]
+        #Model(inputs=[in_layer1, in_layer2], outputs=[out_layer])
+        [model.inputs], [model.layers[1].inbound_nodes[0].output_tensors, model.output]
         #[inputs], [last_conv.output, model.output]
     )
     inputs = Keras.Input(shape=(128, 128, 3))
