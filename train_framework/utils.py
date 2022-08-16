@@ -40,6 +40,7 @@ def set_logging(args, type="train"):
         file_name = f"INFER_{date}.log"
     elif type == 'data':
         file_name = f"DATA_{date}.log"
+    
     if type == 'train':
         log_dir = os.path.join(args.output_dir, file_name)
     else:

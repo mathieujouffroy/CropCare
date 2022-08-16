@@ -34,8 +34,9 @@ polyloss: True
 # option to compute advanced metrics while training multiple models
 eval_during_training: True
 
-
-models: ['pret_EfficientNetV2B3', 'InceptionResNetV2']
+#, 'InceptionResNetV2']
+#'pret_EfficientNetV2B3',
+models: ['InceptionResNetV2']
 
 
 # Option to print all warnings related to data processing

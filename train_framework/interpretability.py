@@ -44,17 +44,11 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
             convs = [l for l in layer.layers if l.name == last_conv_layer]
             inputs = [l for l in layer.layers if "input" in l.name]
     last_conv = convs[0]
-    #inputs = inputs[0]
-    #print(inputs)
+    inputs_inter = inputs[0]
     
-    for layer in model.layers:
-        if "InputLayer" == layer.__class__.__name__:
-            print(layer)
-            input_layer = layer
-
+    print(inputs_inter.name)
     print(last_conv)
     print(last_conv.name)
-    print(model.summary)
     print(model.inputs)
     
     grad_model = tf.keras.models.Model(
@@ -62,11 +56,12 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
         [model.inputs], [model.layers[1].inbound_nodes[0].output_tensors, model.output]
         #[inputs], [last_conv.output, model.output]
     )
-    inputs = Keras.Input(shape=(128, 128, 3))
+    #inputs = Keras.Input(shape=(128, 128, 3))
+    
     # Then, we compute the gradient of the top predicted class for our input image
     # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
-        img_array = tf.cast(img_array, tf.float32)
+        #img_array = tf.cast(img_array, tf.float32)
         last_conv_layer_output, preds = grad_model(img_array)
         # watch the conv_output_values
         tape.watch(last_conv_layer_output)

@@ -100,9 +100,8 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     model.compile(loss=poly_loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
-    #checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
+    checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir),
         callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.5, verbose=1),
         callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
         #callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m",
@@ -115,6 +114,8 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         callback_lst.append(wandb_callback)
         wandb.define_metric("val_loss", summary="min")
         wandb.define_metric("val_f1_m", summary="max")
+    else:
+        callback_lst.append(callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir))
 
     logger.info("\n\n")
     logger.info(f"  =========== TRAINING MODEL {m_name} ===========")
@@ -280,7 +281,10 @@ def main():
     for m_name, model in models_dict.items():
         print(model.summary())
         print(model.inputs)
+        tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
         for layer in model.layers:
+            if 'input' in layer.__class__.__name__:
+                print(layer.name, layer.input_shape)
             if "InputLayer" == layer.__class__.__name__:
                 print(f"in normal layers : {layer.name}")
             if "Functional" == layer.__class__.__name__:
