@@ -282,11 +282,11 @@ def main():
         print(model.summary())
         print(model.inputs)
         print("----------")
-        tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
-        plt.show()
-        print(tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True))
-        plt.show()
-        print("----------")
+        #tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
+        #plt.show()
+        #print(tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True))
+        #plt.show()
+        #print("----------")
         for layer in model.layers:
             if 'input' in layer.__class__.__name__:
                 print(layer.name, layer.input_shape)
