@@ -22,17 +22,23 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
 
     if 'VGG16' in m_name:
         last_conv_layer = "block5_conv3"
+        mode = 'centering'
     elif 'InceptionV3' in m_name:
         last_conv_layer = "conv2d_296"
+        mode = 'sample_wise_scaling'
     elif 'ResNet50V2' in m_name:
         last_conv_layer = "conv5_block3_3_conv"
+        mode = 'sample_wise_scaling'
     elif 'InceptionResNetV2' in m_name:
         last_conv_layer = "conv_7b_ac"
+        mode = 'sample_wise_scaling'
     elif 'Densenet201' in m_name:
         last_conv_layer = "conv5_block32_2_conv"
+        mode = 'scale_std'
     elif 'EfficientNetV2B3' in m_name:
         # efficientnetv2-b3
         last_conv_layer = "top_conv"
+        mode = None
     else:
         last_conv_layer = "last_conv"
     
@@ -45,6 +51,11 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
             inputs = [l for l in layer.layers if "input" in l.name]
     last_conv = convs[0]
     inputs_inter = inputs[0]
+
+    if type(mode) != str:
+        inputs = mode(model.inputs)
+    else:
+        inputs = preprocess_image(model.inputs, mode)
     
     print(inputs_inter.name)
     print(last_conv)
@@ -53,7 +64,9 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
     
     grad_model = tf.keras.models.Model(
         #Model(inputs=[in_layer1, in_layer2], outputs=[out_layer])
-        [model.inputs], [model.layers[1].inbound_nodes[0].output_tensors, model.output]
+        # pret_efficienet
+        #[model.inputs], [model.layers[1].inbound_nodes[0].output_tensors, model.output]
+        [inputs], [last_conv.output, model.output]
         #[inputs], [last_conv.output, model.output]
     )
     #inputs = Keras.Input(shape=(128, 128, 3))
