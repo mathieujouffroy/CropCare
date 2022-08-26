@@ -256,9 +256,9 @@ def main():
 
     # Retrieve Models to evaluate
     if args.n_classes == 2:
-        models_dict = get_models(args.n_classes-1, args.input_shape, args.models)
+        models_dict = get_models(args, args.n_classes-1)
     else:
-        models_dict = get_models(args.n_classes, args.input_shape, args.models)
+        models_dict = get_models(args, args.n_classes)
 
     # Set training parameters
     args.nbr_train_batch = int(math.ceil(args.len_train / args.batch_size))

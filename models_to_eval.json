@@ -1,0 +1,28 @@
+{
+    "simple_std":{"model":"simple_conv_model", "mode":"scale_std", "t_type":null},
+    "baseline_samplewise":{"model":"convolutional_model", "mode":"sample_wise_scaling", "t_type":null},
+    "alexnet":{"model":"alexnet_model", "mode":"centering", "t_type":null},
+    "my_VGG16":{"model":"vgg16_model", "mode":"centering", "t_type":null},
+    "my_Resnet50":{"model":"Resnet50_model", "mode":"sample_wise_scaling", "t_type":null},
+        
+
+    "VGG16":{"model":"VGG16", "mode":"centering", "t_type":null},
+    "ResNet50V2":{"model":"ResNet50V2", "mode":"sample_wise_scaling", "t_type":null},
+    "InceptionV3":{"model":"InceptionV3", "mode":"sample_wise_scaling", "t_type":null}, 
+    "InceptionResNetV2":{"model":"InceptionResNetV2", "mode":"sample_wise_scaling", "t_type":null},
+    "DenseNet201":{"model":"DenseNet201", "mode":"scale_std", "t_type":null},
+    "EfficientNetV2B3":{"model":"EfficientNetV2B3", "mode":null, "t_type":null},
+
+    "LAB_2path_InceptionV3":{"model":"lab_two_path_inception_v3", "mode":"sample_wise_scaling", "t_type":null},
+    "LAB_2path_InceptionResNetV2":{"model":"lab_two_path_inceptionresnet_v2", "mode":"sample_wise_scaling", "t_type":null},
+
+    "pret_ResNet50V2":{"model":"ResNet50V2", "mode":"keras_imgnet", "t_type":"transfer"},
+    "pret_DenseNet201":{"model":"DenseNet201", "mode":"keras_imgnet", "t_type":"transfer"},
+    "pret_EfficientNetV2B3":{"model":"EfficientNetV2B3", "mode":null, "t_type":"transfer"},
+    
+    "pret_ConvNext":{"model":"ConvNeXtSmall", "mode":null, "t_type":"transfer"},
+    
+    "ConvNext":{"model":"TFConvNextModel", "mode":null, "t_type":"transformer"},
+    "VIT":{"model":"TFViTModel", "mode":null, "t_type":"transformer"},
+    "Swin":{"model":"TFSwinModel", "mode":null, "t_type":"transformer"}
+}

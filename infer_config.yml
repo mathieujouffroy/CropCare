@@ -23,7 +23,8 @@ transformer: False
 wandb: True
 
 # the path to the directory of the dataset
-dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
+#dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
+dataset: '../resources/small_test/plant_dataset_209_split_sets.h5'
 
 # the path to the root directory used to store experiments
 xp_dir: 'wandb/RGB/Top-K'

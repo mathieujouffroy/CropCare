@@ -1,11 +1,13 @@
 import tensorflow as tf
 from tensorflow import keras
+import json
+from importlib import import_module
 import tensorflow.keras.layers as tfl
 from tensorflow.keras.utils import get_file
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform
 from tensorflow.keras.applications import VGG16, ResNet50, ResNet50V2, Xception, InceptionV3, InceptionResNetV2, DenseNet201
-from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M #, ConvNeXtSmall
+from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M, ConvNeXtSmall
 from custom_inception_model import *
 from preprocess_tensor import preprocess_image
 from transformers import TFViTModel, TFViTForImageClassification, TFConvNextModel, TFConvNextForImageClassification, TFSwinModel, TFSwinForImageClassification
@@ -495,52 +497,68 @@ def prepare_model(model, input_shape, n_classes, mode, t_type, weights):
     return model
 
 
-MODELS = {
-    'simple_std':{'model':simple_conv_model, 'mode':'scale_std', 't_type':None},
-    'baseline_samplewise':{'model':convolutional_model, 'mode':'sample_wise_scaling', 't_type':None},
-    'alexnet':{'model':alexnet_model, 'mode':'centering', 't_type':None},
-    'my_VGG16':{'model':vgg16_model, 'mode':'centering', 't_type':None},
-    'my_Resnet50':{'model':Resnet50_model, 'mode':'sample_wise_scaling', 't_type':None},
-        
+def set_model(model, mode):
+    if model == 'VGG16':
+        model = VGG16
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.vgg16.preprocess_input
+    elif model == 'ResNet50V2':
+        model = ResNet50V2
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.resnet_v2.preprocess_input
+    elif model == 'InceptionV3':
+        model = InceptionV3
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.inception_v3.preprocess_input
+    elif model == 'InceptionResNetV2':
+        model = InceptionResNetV2
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.inception_resnet_v2.preprocess_input
+    elif model == 'DenseNet201':
+        model = DenseNet201
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.densenet.preprocess_input
+    elif model == 'EfficientNetV2B3':
+        model = EfficientNetV2B3
+        if mode == 'keras_imgnet':
+            mode = None
+    elif model == 'lab_two_path_inception_v3':
+        model = lab_two_path_inception_v3
+    elif model == 'lab_two_path_inceptionresnet_v2':
+        model = lab_two_path_inceptionresnet_v2
+    elif model == 'ConvNeXtSmall':
+        model = ConvNeXtSmall
+    elif model == 'TFConvNextModel':
+        model = TFConvNextModel.from_pretrained("facebook/convnext-tiny-224")
+    elif model == 'TFViTModel':
+        model = TFViTModel.from_pretrained("google/vit-base-patch16-224")
+    elif model == 'TFSwinModel':
+        model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
+    return model, mode
 
-    'VGG16':{'model':VGG16, 'mode':'centering', 't_type':None},
-    'ResNet50V2':{'model':ResNet50V2, 'mode':'sample_wise_scaling', 't_type':None},
-    'InceptionV3':{'model':InceptionV3, 'mode':'sample_wise_scaling', 't_type':None}, 
-    'InceptionResNetV2':{'model':InceptionResNetV2, 'mode':'sample_wise_scaling', 't_type':None}, # For transfer learning InceptionResnetV2 needs img size (299, 299)
-    'DenseNet201':{'model':DenseNet201, 'mode':'scale_std', 't_type':None},
-    'EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':None},
-
-    # Custom model
-    'LAB_2path_InceptionV3':{'model':lab_two_path_inception_v3, 'mode':'sample_wise_scaling', 't_type':None},
-    'LAB_2path_InceptionResNetV2':{'model':lab_two_path_inceptionresnet_v2, 'mode':'sample_wise_scaling', 't_type':None},
-
-    # Pretrained model in ImageNet
-    'pret_ResNet50V2':{'model':ResNet50V2, 'mode':tf.keras.applications.resnet_v2.preprocess_input, 't_type':'transfer'},
-    'pret_DenseNet201':{'model':DenseNet201, 'mode':tf.keras.applications.densenet.preprocess_input, 't_type':'transfer'},
-    'pret_EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':'transfer'},
-
-    # TRANSFORMERS
-    # Keras 
-    #"pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
-    # HuggingFace 
-    "ConvNext":{'model':TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), 'mode':None, 't_type':'transformer'},
-    'VIT':{'model':TFViTModel.from_pretrained("google/vit-base-patch16-224"), 'mode':None, 't_type':'transformer'},
-    'Swin':{'model':TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224"), 'mode':None, 't_type':'transformer'},
-}
-
-
-
-def get_models(n_classes, input_shape, model_names, we=None):
+def get_models(args, n_classes, we=None):
     """
     Get the models for the training and testing.
     """
 
+    input_shape = args.input_shape
     print(f"we have {n_classes} classes")
-    d_subset = {key: MODELS[key] for key in model_names}
+    with open('../models_to_eval.json') as f:
+        model_d = json.load(f)
+    to_test = args.models
+    print(model_d)
+    print(type(model_d))
+    d_subset = {key: model_d[key] for key in to_test}
+    print(d_subset)
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
         model = params['model']
         mode = params['mode']
+        print(mode)
+        print("----")
+        model, mode = set_model(model, mode)
+        print(mode)
+        print(model)
         t_type = params['t_type']
         if t_type in ['transfer', 'finetune']:
             weights = 'imagenet'
@@ -549,7 +567,7 @@ def get_models(n_classes, input_shape, model_names, we=None):
         print(weights)
         print(name)
         models_to_test[name] = prepare_model(model, input_shape, n_classes, mode, t_type, weights)
-
+    print(p)
     return models_to_test
     #'baseline_sample_scale': simple_conv_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
     #'baseline_sample_st': simple_conv_model(input_shape, n_classes=n_classes, mode='scale_std'),
@@ -564,3 +582,5 @@ def get_models(n_classes, input_shape, model_names, we=None):
 ## early stopping from 1st run
 ## TEST MODEL TRAINED ON IMAGENET
 #tensorboard --logdir logs/fit
+
+
