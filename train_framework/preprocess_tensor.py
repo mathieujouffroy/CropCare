@@ -68,6 +68,12 @@ def preprocess_image(tensor_img, mode='centering'):
     Returns:
         Preprocessed tensor.
     """
+    if mode == None:
+        return tensor_img
+
+    if type(mode) != str:
+        tensor_img = mode(tensor_img)
+        return tensor_img
 
     tensor_img = tf.cast(tensor_img, tf.float32, name=None)
 

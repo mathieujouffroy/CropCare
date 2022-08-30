@@ -2,14 +2,26 @@ import wandb
 import random
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras
 from tensorflow import keras
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from IPython.display import Image, display
+from preprocess_tensor import preprocess_image
 
-
-def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
+#class My_GradCAM:
+#    def __init__(self, model, classIdx, inner_model=None, layerName=None):
+#        self.model = model
+#        self.classIdx = classIdx
+#        self.inner_model = inner_model
+#        if self.inner_model == None:
+#            self.inner_model = model
+#        self.layerName = layerName 
+#cam = My_GradCAM(model, None, inner_model=model.get_layer("vgg19"), layerName="block5_pool")
+#   gradModel = tensorflow.keras.models.Model(inputs=[self.inner_model.inputs],
+#                  outputs=[self.inner_model.get_layer(self.layerName).output,
+#                  self.inner_model.output])
+#                  
+def make_gradcam_heatmap(model, m_name, mode, img_array, pred_index=None):
     """
     GRADient-weighted Class Activation Mapping (Grad-CAM)
 
@@ -22,23 +34,16 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
 
     if 'VGG16' in m_name:
         last_conv_layer = "block5_conv3"
-        mode = 'centering'
     elif 'InceptionV3' in m_name:
         last_conv_layer = "conv2d_296"
-        mode = 'sample_wise_scaling'
     elif 'ResNet50V2' in m_name:
         last_conv_layer = "conv5_block3_3_conv"
-        mode = 'sample_wise_scaling'
     elif 'InceptionResNetV2' in m_name:
         last_conv_layer = "conv_7b_ac"
-        mode = 'sample_wise_scaling'
     elif 'Densenet201' in m_name:
         last_conv_layer = "conv5_block32_2_conv"
-        mode = 'scale_std'
     elif 'EfficientNetV2B3' in m_name:
-        # efficientnetv2-b3
         last_conv_layer = "top_conv"
-        mode = None
     else:
         last_conv_layer = "last_conv"
     
@@ -46,28 +51,35 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
     for layer in model.layers:
+        print(layer.name, layer.output_shape)
         if "Functional" == layer.__class__.__name__:
+            #for l in layer.layers:
+            #    #print(l)
+            #    print(l.name)
             convs = [l for l in layer.layers if l.name == last_conv_layer]
             inputs = [l for l in layer.layers if "input" in l.name]
     last_conv = convs[0]
     inputs_inter = inputs[0]
 
-    if type(mode) != str:
-        inputs = mode(model.inputs)
-    else:
-        inputs = preprocess_image(model.inputs, mode)
+    #if type(mode) != str:
+    #    inputs = mode(model.inputs)
+    #else:
+    #    inputs = preprocess_image(model.inputs, mode)
     
     print(inputs_inter.name)
     print(last_conv)
     print(last_conv.name)
     print(model.inputs)
+    print(f"preprocessed inputs: {inputs}")
     
     grad_model = tf.keras.models.Model(
         #Model(inputs=[in_layer1, in_layer2], outputs=[out_layer])
         # pret_efficienet
         #[model.inputs], [model.layers[1].inbound_nodes[0].output_tensors, model.output]
-        [inputs], [last_conv.output, model.output]
-        #[inputs], [last_conv.output, model.output]
+        #[model.inputs], [model.get_layer(last_conv.name).output, model.output]
+        [model.input], [model.layers[2].get_layer(last_conv.name).output, model.output]
+        #[model.inputs], [last_conv.output, model.output]
+        
     )
     #inputs = Keras.Input(shape=(128, 128, 3))
     
@@ -104,7 +116,7 @@ def make_gradcam_heatmap(model, m_name, img_array, pred_index=None):
     return heatmap.numpy()
 
 
-def save_and_display_gradcam(args, model, m_name, x_test, n_img, model_metrics_dir, alpha=0.4):
+def save_and_display_gradcam(args, model, m_name, mode, x_test, n_img, model_metrics_dir, alpha=0.4):
     print(f"Displaying Grad-CAM for {n_img} images")
     print(f"X test shape is : {x_test.shape}")
     print(f"Model:{m_name}")
@@ -118,7 +130,7 @@ def save_and_display_gradcam(args, model, m_name, x_test, n_img, model_metrics_d
 
     for id in img_ids:
         img = x_test[id]
-        heatmap = make_gradcam_heatmap(model, m_name, img)
+        heatmap = make_gradcam_heatmap(model, m_name, mode, img)
         # Rescale heatmap to a range 0-255
         heatmap = np.uint8(255 * heatmap)
         # Use jet colormap to colorize heatmap

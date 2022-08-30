@@ -6,6 +6,7 @@ import argparse
 import random
 import numpy as np
 import tensorflow as tf
+import wandb
 
 class bcolors:
     HEADER = '\033[95m'
@@ -89,6 +90,15 @@ def wandb_cfg(args, n_training_steps):
     config_dict["num_log_batches"] = min(max_log_batches, NUM_LOG_BATCHES)
 
     return config_dict
+
+
+def set_wandb_project_run(args, run_name):
+    dir_name = args.output_dir.split('/')[-1]
+    project_name = f"cropdis-{dir_name}"
+    cfg = wandb_cfg(args, args.n_training_steps)
+    run = wandb.init(project=project_name,
+                     job_type="train", name=run_name, config=cfg, reinit=True)
+    assert run is wandb.run
 
 def parse_args():
     """ Parse training paremeters from config YAML file """

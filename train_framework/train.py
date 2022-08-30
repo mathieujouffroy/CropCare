@@ -81,7 +81,6 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     """
 
     # Prepare optimizer
-    print(f"model : {model}")
     if args.transformer:
         lr = 3e-5
         optimizer, lr_schedule = create_optimizer(
@@ -278,49 +277,49 @@ def main():
     logger.info(f"  Class weights = {class_weights}")
 
     # Train and evaluate
-    for m_name, model in models_dict.items():
+    for m_name, model_tupl in models_dict.items():
+        model = model_tupl[0]
+        mode = model_tupl[1]
+        print(f"mode:{mode}")
+        print(f"model:{m_name}")
         print(model.summary())
         print(model.inputs)
         print("----------")
+        for i, layer in enumerate(model.layers):
+            print(i, layer.name, layer.output_shape, layer.trainable)
+
         #tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
         #plt.show()
         #print(tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True))
         #plt.show()
         #print("----------")
-        for layer in model.layers:
-            if 'input' in layer.__class__.__name__:
-                print(layer.name, layer.input_shape)
-            if "InputLayer" == layer.__class__.__name__:
-                print(f"in normal layers : {layer.name}")
-            if "Functional" == layer.__class__.__name__:
-                for _l in layer.layers:
-                    print(_l.name)
-
-    
+        #for layer in model.layers:
+        #    if 'input' in layer.__class__.__name__:
+        #        print(layer.name, layer.input_shape)
+        #    if "InputLayer" == layer.__class__.__name__:
+        #        print(f"in normal layers : {layer.name}")
+        #    if "Functional" == layer.__class__.__name__:
+        #        for _l in layer.layers:
+        #            print(_l.name)
 
         tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs
         date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
         if args.polyloss:
-            new_name = m_name+"_poly"
-        args.model_dir = os.path.join(args.output_dir, f"{new_name}_{date}")
+            m_name = m_name+"_poly"
+        args.model_dir = os.path.join(args.output_dir, f"{m_name}_{date}")
         if not os.path.exists(args.model_dir):
             os.makedirs(args.model_dir)
         
         # define wandb run and project
         if args.wandb:
-            dir_name = args.output_dir.split('/')[-1]
-            project_name = f"cropdis-{dir_name}"
-            cfg = wandb_cfg(args, args.n_training_steps)
-            run = wandb.init(project=project_name,
-                             job_type="train", name=new_name, config=cfg, reinit=True)
-            assert run is wandb.run
+            set_wandb_project_run(args, m_name)
 
-        trained_model = train_model(args, new_name, model, train_set, valid_set, class_weights)
+        trained_model = train_model(args, m_name, model, train_set, valid_set, class_weights)
         
         if args.eval_during_training:
-            print(trained_model.history)
             X_test, y_test = load_split_hdf5(args.dataset, 'test')
+
             # Set parameters
             args.len_test = len(X_test)
             args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
@@ -341,7 +340,7 @@ def main():
             test_set = prep_ds_input(args, test_set, args.len_test)
             logger.info("\n")
             logger.info(f"  ***** Evaluating on Validation set *****")
-            compute_training_metrics(args, trained_model, m_name, test_set)
+            compute_training_metrics(args, trained_model, m_name, mode, test_set)
 
         if args.wandb:
             wandb.run.finish()

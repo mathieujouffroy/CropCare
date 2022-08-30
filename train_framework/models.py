@@ -1,17 +1,26 @@
-import tensorflow as tf
-from tensorflow import keras
 import json
+from collections import OrderedDict
 from importlib import import_module
+from os import pread
+
+import tensorflow as tf
 import tensorflow.keras.layers as tfl
-from tensorflow.keras.utils import get_file
+from tensorflow import keras
+from tensorflow.keras.applications import (VGG16, ConvNeXtSmall, DenseNet201,
+                                           EfficientNetB3, EfficientNetV2B3,
+                                           EfficientNetV2M, EfficientNetV2S,
+                                           InceptionResNetV2, InceptionV3,
+                                           ResNet50, ResNet50V2, Xception)
+from tensorflow.keras.initializers import glorot_uniform, random_uniform
 from tensorflow.keras.regularizers import L2
-from tensorflow.keras.initializers import random_uniform, glorot_uniform
-from tensorflow.keras.applications import VGG16, ResNet50, ResNet50V2, Xception, InceptionV3, InceptionResNetV2, DenseNet201
-from tensorflow.keras.applications import EfficientNetB3, EfficientNetV2B3, EfficientNetV2S, EfficientNetV2M, ConvNeXtSmall
+from tensorflow.keras.utils import get_file
+from transformers import (TFConvNextForImageClassification, TFConvNextModel,
+                          TFSwinForImageClassification, TFSwinModel,
+                          TFViTForImageClassification, TFViTModel)
+
 from custom_inception_model import *
 from preprocess_tensor import preprocess_image
-from transformers import TFViTModel, TFViTForImageClassification, TFConvNextModel, TFConvNextForImageClassification, TFSwinModel, TFSwinForImageClassification
-from collections import OrderedDict
+
 
 def simple_conv_model(input_shape, n_classes, mode=None):
     """
@@ -465,28 +474,24 @@ def prepare_model(model, input_shape, n_classes, mode, t_type, weights):
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)
     else:
-
-        base_model = model(weights=weights, input_shape=input_shape, include_top=False)
-        inputs = keras.Input(shape=input_shape)
         
-        if mode:
-            print("preparing inputs")
-            if type(mode) != str:
-                inputs = mode(inputs)
-            else:
-                inputs = preprocess_image(inputs, mode)
-
+        base_model = model(input_shape=input_shape, include_top=False, weights=weights)
+        
         if t_type == 'transfer':
             base_model.trainable = False
         else:
             # unfreeze all or part of the base model and retrain the whole model end-to-end
             base_model.trainable = True
-            
+
+        inputs = tfl.Input(shape=input_shape)
+        x = tfl.Lambda(preprocess_image)(inputs, mode)
+    
         if t_type == 'transfer':
             # keep the BatchNormalization layers in inference mode by passing training=False
-            x = base_model(inputs, training=False)
+            x = base_model(x, training=False)
         else:
-            x = base_model(inputs, training=True)
+            x = base_model(x, training=True)
+
            
         x = keras.layers.GlobalAveragePooling2D()(x)
         #x = keras.layers.Dropout(0.2)(x)
@@ -494,7 +499,7 @@ def prepare_model(model, input_shape, n_classes, mode, t_type, weights):
             n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
         model = keras.Model(inputs, outputs)
 
-    return model
+    return (model, mode)
 
 
 def set_model(model, mode):
@@ -534,7 +539,8 @@ def set_model(model, mode):
         model = TFViTModel.from_pretrained("google/vit-base-patch16-224")
     elif model == 'TFSwinModel':
         model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
-    return model, mode
+    return (model, mode)
+
 
 def get_models(args, n_classes, we=None):
     """
@@ -542,32 +548,19 @@ def get_models(args, n_classes, we=None):
     """
 
     input_shape = args.input_shape
-    print(f"we have {n_classes} classes")
     with open('../models_to_eval.json') as f:
         model_d = json.load(f)
     to_test = args.models
-    print(model_d)
-    print(type(model_d))
     d_subset = {key: model_d[key] for key in to_test}
-    print(d_subset)
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
-        model = params['model']
-        mode = params['mode']
-        print(mode)
-        print("----")
-        model, mode = set_model(model, mode)
-        print(mode)
-        print(model)
+        model, mode = set_model(params['model'], params['mode'])
         t_type = params['t_type']
         if t_type in ['transfer', 'finetune']:
             weights = 'imagenet'
         else:
             weights = None
-        print(weights)
-        print(name)
         models_to_test[name] = prepare_model(model, input_shape, n_classes, mode, t_type, weights)
-    print(p)
     return models_to_test
     #'baseline_sample_scale': simple_conv_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
     #'baseline_sample_st': simple_conv_model(input_shape, n_classes=n_classes, mode='scale_std'),

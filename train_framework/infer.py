@@ -3,6 +3,7 @@ from utils import *
 from prep_data_train import *
 from preprocess_tensor import *
 from metrics import compute_training_metrics, f1_m
+from datasets import load_from_disk
 import wandb
 
 logger = logging.getLogger(__name__)
@@ -144,35 +145,35 @@ if __name__ == '__main__':
 
 
 
-MODELS = {
-    'simple_std':{'model':simple_conv_model, 'mode':'scale_std', 't_type':None},
-    'baseline_samplewise':{'model':convolutional_model, 'mode':'sample_wise_scaling', 't_type':None},
-    'alexnet':{'model':alexnet_model, 'mode':'centering', 't_type':None},
-    'my_VGG16':{'model':vgg16_model, 'mode':'centering', 't_type':None},
-    'my_Resnet50':{'model':Resnet50_model, 'mode':'sample_wise_scaling', 't_type':None},
-        
-
-    'VGG16':{'model':VGG16, 'mode':'centering', 't_type':None},
-    'ResNet50V2':{'model':ResNet50V2, 'mode':'sample_wise_scaling', 't_type':None},
-    'InceptionV3':{'model':InceptionV3, 'mode':'sample_wise_scaling', 't_type':None}, 
-    'InceptionResNetV2':{'model':InceptionResNetV2, 'mode':'sample_wise_scaling', 't_type':None}, # For transfer learning InceptionResnetV2 needs img size (299, 299)
-    'DenseNet201':{'model':DenseNet201, 'mode':'scale_std', 't_type':None},
-    'EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':None},
-
-    # Custom model
-    'LAB_2path_InceptionV3':{'model':lab_two_path_inception_v3, 'mode':'sample_wise_scaling', 't_type':None},
-    'LAB_2path_InceptionResNetV2':{'model':lab_two_path_inceptionresnet_v2, 'mode':'sample_wise_scaling', 't_type':None},
-
-    # Pretrained model in ImageNet
-    'pret_ResNet50V2':{'model':ResNet50V2, 'mode':tf.keras.applications.resnet_v2.preprocess_input, 't_type':'transfer'},
-    'pret_DenseNet201':{'model':DenseNet201, 'mode':tf.keras.applications.densenet.preprocess_input, 't_type':'transfer'},
-    'pret_EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':'transfer'},
-
-    # TRANSFORMERS
-    # Keras 
-    "pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
-    # HuggingFace 
-    "ConvNext":{'model':TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), 'mode':None, 't_type':'transformer'},
-    'VIT':{'model':TFViTModel.from_pretrained("google/vit-base-patch16-224"), 'mode':None, 't_type':'transformer'},
-    'Swin':{'model':TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224"), 'mode':None, 't_type':'transformer'},
-}
+#MODELS = {
+#    'simple_std':{'model':simple_conv_model, 'mode':'scale_std', 't_type':None},
+#    'baseline_samplewise':{'model':convolutional_model, 'mode':'sample_wise_scaling', 't_type':None},
+#    'alexnet':{'model':alexnet_model, 'mode':'centering', 't_type':None},
+#    'my_VGG16':{'model':vgg16_model, 'mode':'centering', 't_type':None},
+#    'my_Resnet50':{'model':Resnet50_model, 'mode':'sample_wise_scaling', 't_type':None},
+#        
+#
+#    'VGG16':{'model':VGG16, 'mode':'centering', 't_type':None},
+#    'ResNet50V2':{'model':ResNet50V2, 'mode':'sample_wise_scaling', 't_type':None},
+#    'InceptionV3':{'model':InceptionV3, 'mode':'sample_wise_scaling', 't_type':None}, 
+#    'InceptionResNetV2':{'model':InceptionResNetV2, 'mode':'sample_wise_scaling', 't_type':None}, # For transfer learning InceptionResnetV2 needs img size (299, 299)
+#    'DenseNet201':{'model':DenseNet201, 'mode':'scale_std', 't_type':None},
+#    'EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':None},
+#
+#    # Custom model
+#    'LAB_2path_InceptionV3':{'model':lab_two_path_inception_v3, 'mode':'sample_wise_scaling', 't_type':None},
+#    'LAB_2path_InceptionResNetV2':{'model':lab_two_path_inceptionresnet_v2, 'mode':'sample_wise_scaling', 't_type':None},
+#
+#    # Pretrained model in ImageNet
+#    'pret_ResNet50V2':{'model':ResNet50V2, 'mode':tf.keras.applications.resnet_v2.preprocess_input, 't_type':'transfer'},
+#    'pret_DenseNet201':{'model':DenseNet201, 'mode':tf.keras.applications.densenet.preprocess_input, 't_type':'transfer'},
+#    'pret_EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':'transfer'},
+#
+#    # TRANSFORMERS
+#    # Keras 
+#    "pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
+#    # HuggingFace 
+#    "ConvNext":{'model':TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), 'mode':None, 't_type':'transformer'},
+#    'VIT':{'model':TFViTModel.from_pretrained("google/vit-base-patch16-224"), 'mode':None, 't_type':'transformer'},
+#    'Swin':{'model':TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224"), 'mode':None, 't_type':'transformer'},
+#}

@@ -98,7 +98,6 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
                               weights=None,
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
-                              max_mix_idx=5,
                               model_name='two_path_inception_v3'):
     """
     Instantiates the Inception v3 architecture with 2 paths options.
@@ -110,8 +109,6 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
         n_classes: optional number of classes to classify images
         l_ratio: proportion dedicated to light.
         ab_ratio: proportion dedicated to color.
-        max_mix_idx: last "mixed layer" index. You can create smaller
-                    architectures with this parameter.
         model_name: model name
     # Returns
         A Keras model instance.
@@ -121,7 +118,7 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
     """
     img_input = tfl.Input(shape=input_shape)
 
-    img_input = preprocess_image(img_input, mode)
+    #img_input = preprocess_image(img_input, mode)
 
     channel_axis = 3
 
@@ -387,7 +384,6 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
                               weights=None,
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
-                              max_mix_idx=5,
                               model_name='two_path_inception_v3'):
     """
     Instantiates the Inception v3 architecture with 2 paths options.
@@ -399,8 +395,6 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
         n_classes: optional number of classes to classify images
         l_ratio: proportion dedicated to light.
         ab_ratio: proportion dedicated to color.
-        max_mix_idx: last "mixed layer" index. You can create smaller
-                    architectures with this parameter.
         model_name: model name
     # Returns
         A Keras model instance.
@@ -410,7 +404,7 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
     """
     img_input = tfl.Input(shape=input_shape)
 
-    img_input = preprocess_image(img_input, mode)
+    #img_input = preprocess_image(img_input, mode)
 
     channel_axis = 3
 
