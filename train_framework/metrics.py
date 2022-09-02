@@ -243,5 +243,5 @@ def compute_training_metrics(args, model, m_name, mode, test_dataset, m_type='tr
     #                 model_metrics_dir, m_type)
 
     # MODEL INTERPRETABILITY
-    save_and_display_gradcam(args, model, m_name, mode, x_test, 5, model_metrics_dir)
+    save_and_display_gradcam(args, model, m_name, mode, x_test, 4, model_metrics_dir)
     # DISPLAY SALIENCY MAPS

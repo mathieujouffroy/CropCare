@@ -59,9 +59,12 @@ fe_dataset: '../resources/datasets/transformers_ds_224/vit'
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/comp-top-k'  # -> all augmented
 
-mean_arr: [118.94, 124.72, 104.59]
-std_arr: [49.35, 42.97, 54.13]
-augm_mean_arr: [118.14, 124.61, 104.01]
-augm_std_arr: [49.30, 42.62, 54.95]
-augmlab_mean_arr: [129.75, 122.14, 138.48]
-augmlab_std_arr: [44.66, 12.08, 15.12]
+# NORMAL
+#mean_arr: [118.94, 124.72, 104.59]
+#std_arr: [49.35, 42.97, 54.13]
+# AUGM 128
+mean_arr: [118.26, 124.73, 104.13]
+std_arr: [48.91, 42.17, 53.59]
+# AUGM  LAB  128
+#mean_arr: [129.75, 122.14, 138.48]
+#std_arr: [44.66, 12.08, 15.12]

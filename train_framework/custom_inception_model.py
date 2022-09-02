@@ -118,8 +118,6 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
     """
     img_input = tfl.Input(shape=input_shape)
 
-    #img_input = preprocess_image(img_input, mode)
-
     channel_axis = 3
 
     l_branch = CopyChannels(0, 1)(img_input)
@@ -403,8 +401,6 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
             or invalid input shape.
     """
     img_input = tfl.Input(shape=input_shape)
-
-    #img_input = preprocess_image(img_input, mode)
 
     channel_axis = 3
 

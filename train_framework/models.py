@@ -22,7 +22,7 @@ from custom_inception_model import *
 from preprocess_tensor import preprocess_image
 
 
-def simple_conv_model(input_shape, n_classes, mode=None):
+def simple_conv_model(input_shape, n_classes):
     """
     Implements the forward propagation for the model:
     CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> DENSE
@@ -35,8 +35,6 @@ def simple_conv_model(input_shape, n_classes, mode=None):
     """
 
     input_img = tf.keras.Input(shape=input_shape)
-    if mode:
-        input_img = preprocess_image(input_img, mode)
 
     Z1 = tfl.Conv2D(filters=8, kernel_size=(4, 4), strides=(
         1, 1), padding='same', name='conv0')(input_img)
@@ -70,9 +68,7 @@ def convolutional_model(input_shape, n_classes, mode=None, l2_decay=0.0, drop_ra
     """
 
     input_img = tf.keras.Input(shape=input_shape)
-    if mode:
-        input_img = preprocess_image(input_img, mode)
-
+    
     Z1 = tfl.Conv2D(filters=32, kernel_size=(3, 3), padding='valid', name='conv0',
                     kernel_regularizer=L2(l2_decay))(input_img)
     if (has_batch_norm):
@@ -233,8 +229,8 @@ def vgg16_model(input_shape, n_classes, l2_decay=0.0, include_top=True, weights=
         F = tfl.Flatten()(P5)
         Z6 = tfl.Dense(4096, activation='relu', name='FC1')(F)
         Z7 = tfl.Dense(4096, activation='relu', name='FC2')(Z6)
-        Z8 = tfl.Dense(n_class, name='FC2')(A6)
-        outputs = tfl.Dense(n_classes, activation='softmax', name='predictions')(A7)
+        Z8 = tfl.Dense(n_classes, name='FC2')(Z7)
+        outputs = tfl.Dense(n_classes, activation='softmax', name='predictions')(Z8)
     else:
         outputs = P5
 
@@ -442,66 +438,6 @@ def Resnet50_model(input_shape, n_classes, include_top=True, weights=None):
 
     return model
 
-
-def prepare_model(model, input_shape, n_classes, mode, t_type, weights):
-    """
-    Prepare the model
-
-    Args:
-        model(keras.Model): the model to be trained
-        input_shape(tuple): the shape of the input images
-        n_classes(int): the number of classes
-    Returns:
-        model(keras.Model): the trained model
-    """
-
-    if t_type == 'transformer':
-        # HF -> channel first
-        input_shape = (input_shape[-1], input_shape[1], input_shape[0])
-        print(f"input shape: {input_shape}")
-        inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
-        # get last layer output, retrieve hidden states
-        #vit = model.vit(inputs)[0]
-        #convnext = model.convnext(inputs)[1]
-        x = model.swin(inputs)[1] 
-        # model.vit(inputs) -> outputs : TFBaseModelOutput,  [0] = last_hidden_state
-        # ouputs = model(**inputs)
-        # last_hidden_states = outputs.last_hidden_state
-        # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
-        outputs = keras.layers.Dense(
-            n_classes, activation='softmax', name='predictions')(x)
-        # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
-        # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
-        model = keras.Model(inputs, outputs)
-    else:
-        
-        base_model = model(input_shape=input_shape, include_top=False, weights=weights)
-        
-        if t_type == 'transfer':
-            base_model.trainable = False
-        else:
-            # unfreeze all or part of the base model and retrain the whole model end-to-end
-            base_model.trainable = True
-
-        inputs = tfl.Input(shape=input_shape)
-        x = tfl.Lambda(preprocess_image)(inputs, mode)
-    
-        if t_type == 'transfer':
-            # keep the BatchNormalization layers in inference mode by passing training=False
-            x = base_model(x, training=False)
-        else:
-            x = base_model(x, training=True)
-
-           
-        x = keras.layers.GlobalAveragePooling2D()(x)
-        #x = keras.layers.Dropout(0.2)(x)
-        outputs = keras.layers.Dense(
-            n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
-        model = keras.Model(inputs, outputs)
-
-    return (model, mode)
-
-
 def set_model(model, mode):
     if model == 'VGG16':
         model = VGG16
@@ -542,6 +478,66 @@ def set_model(model, mode):
     return (model, mode)
 
 
+def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
+    """
+    Prepare the model
+
+    Args:
+        model(keras.Model): the model to be trained
+        input_shape(tuple): the shape of the input images
+        n_classes(int): the number of classes
+    Returns:
+        model(keras.Model): the trained model
+    """
+
+    if t_type == 'transformer':
+        # HF -> channel first
+        input_shape = (input_shape[-1], input_shape[1], input_shape[0])
+        print(f"input shape: {input_shape}")
+        inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
+        # get last layer output, retrieve hidden states
+        #vit = model.vit(inputs)[0]
+        #convnext = model.convnext(inputs)[1]
+        x = model.swin(inputs)[1] 
+        # model.vit(inputs) -> outputs : TFBaseModelOutput,  [0] = last_hidden_state
+        # ouputs = model(**inputs)
+        # last_hidden_states = outputs.last_hidden_state
+        # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
+        outputs = keras.layers.Dense(
+            n_classes, activation='softmax', name='predictions')(x)
+        # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
+        # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
+        model = keras.Model(inputs, outputs)
+    else:
+        
+        base_model = model(input_shape=input_shape, include_top=False, weights=weights)
+        
+        if t_type == 'transfer':
+            base_model.trainable = False
+        else:
+            # unfreeze all or part of the base model and retrain the whole model end-to-end
+            base_model.trainable = True
+
+        inputs = tfl.Input(shape=input_shape)
+        #x = tfl.Lambda(preprocess_image)(inputs, args.mean_arr, args.std_arr, mode)
+        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
+    
+        if t_type == 'transfer':
+            # keep the BatchNormalization layers in inference mode by passing training=False
+            x = base_model(x, training=False)
+        else:
+            x = base_model(x, training=True)
+
+           
+        x = keras.layers.GlobalAveragePooling2D()(x)
+        #x = keras.layers.Dropout(0.2)(x)
+        outputs = keras.layers.Dense(
+            n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
+        model = keras.Model(inputs, outputs)
+
+    return (model, mode)
+
+
 def get_models(args, n_classes, we=None):
     """
     Get the models for the training and testing.
@@ -560,7 +556,7 @@ def get_models(args, n_classes, we=None):
             weights = 'imagenet'
         else:
             weights = None
-        models_to_test[name] = prepare_model(model, input_shape, n_classes, mode, t_type, weights)
+        models_to_test[name] = prepare_model(args, model, input_shape, n_classes, mode, t_type, weights)
     return models_to_test
     #'baseline_sample_scale': simple_conv_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
     #'baseline_sample_st': simple_conv_model(input_shape, n_classes=n_classes, mode='scale_std'),
