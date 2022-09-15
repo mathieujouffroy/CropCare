@@ -151,6 +151,7 @@ class PlantDataset():
                     print('Loading '+img_folder_name)
                 img_list = os.listdir(img_folder_name)
                 img_list = [i for i in img_list if not i.startswith(".DS")]
+				
                 random.shuffle(img_list)
 
                 p_img_lst = []

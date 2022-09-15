@@ -19,7 +19,7 @@ class_type: 'disease'
 transformer: False
 
 # the path to the directory of the dataset
-dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_224.h5'
+dataset: '../resources/small_test/augm_disease_380_ds_128.h5'
 
 # the path to the root directory used to store experiments
 #xp_dir: '../wandb/Models'
