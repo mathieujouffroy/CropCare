@@ -180,8 +180,6 @@ def main():
         if args.class_type == 'disease':
             args.n_classes = 38
             args.label_map_path = '../resources/label_maps/diseases_label_map.json'
-            #args.n_classes = 3
-            #args.label_map_path = '../resources/small_test/diseases_label_map.json'
         elif args.class_type == 'plants':
             args.n_classes = 14
             args.label_map_path = '../resources/label_maps/plants_label_map.json'

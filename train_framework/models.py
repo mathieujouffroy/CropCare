@@ -6,7 +6,8 @@ from os import pread
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
 from tensorflow import keras
-from tensorflow.keras.applications import (VGG16, ConvNeXtSmall, DenseNet201,
+#from tensorflow.keras.applications import (VGG16, ConvNeXtSmall, DenseNet201,
+from tensorflow.keras.applications import (VGG16, DenseNet201,
                                            EfficientNetB3, EfficientNetV2B3,
                                            EfficientNetV2M, EfficientNetV2S,
                                            InceptionResNetV2, InceptionV3,
