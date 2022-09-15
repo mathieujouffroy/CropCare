@@ -17,14 +17,11 @@ from preprocess_tensor import prep_ds_input
 from custom_callbacks import RocAUCScore
 from custom_loss import poly_loss, poly1_cross_entropy_label_smooth
 from sklearn.utils.class_weight import compute_class_weight
-#import tensorflow_addons as tfa
 from datasets import load_from_disk
 from transformers import create_optimizer
 from transformers import DefaultDataCollator
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
-#if len(physical_devices) > 0:
-#    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +63,6 @@ def generate_class_weights(y_train, class_type, logger):
     return dict(zip(class_labels, unique_class_weights))
 
 
-
 def train_model(args, m_name, model, train_set, valid_set, class_weights):
     """
     Training model on train
@@ -96,19 +92,18 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         elif args.optimizer == 'adam':
             optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
 
-    model.compile(loss=poly_loss, optimizer=optimizer, metrics=args.metrics)
+    model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
     checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
         callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.5, verbose=1),
         callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-        #callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m",
-        #                          save_best_only=True, verbose=1, mode="max"),
+        callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m",
+                                  save_best_only=True, verbose=1, mode="max"),
         #tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-8 * 10**(epoch / 20))
     ]
     if args.wandb:
-        # add WEIGHT INITIALIZATION TRACKING
         wandb_callback = wandb.keras.WandbCallback()
         callback_lst.append(wandb_callback)
         wandb.define_metric("val_loss", summary="min")
@@ -146,9 +141,9 @@ def main():
         raise ValueError(
             f"Output directory ({args.output_dir}) already exists and is not empty. Use --overwrite_output_dir to overcome.")
 
-    # SET LOGGING
+    # set logging
     set_logging(args)
-    # SET SEED
+    # set seed
     set_seed(args)
 
     # Set relevant loss and accuracy
@@ -157,11 +152,10 @@ def main():
         args.metrics = [tf.keras.metrics.CategoricalAccuracy(
             name='binary_acc', dtype=None)]
     else:
-        # Set relevant loss and metrics to evaluate  
+        # Set relevant loss and metrics to evaluate
         if args.transformer:
-            #tf.keras.mixed_precision.set_global_policy("mixed_float16")
             # one-hot encoded labels because are memory inefficient (GPU memory)
-            # guarantee of OOM when you are training a language model with a vast vocabulary size, or big image dataset 
+            # guarantee of OOM when you are training a language model with a vast vocabulary size, or big image dataset
             args.loss = tf.keras.losses.SparseCategoricalCrossentropy()
             args.metrics = [
                 tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy', dtype=None),
@@ -176,22 +170,18 @@ def main():
                 tf.keras.metrics.CategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top-5-accuracy"),
                 f1_m, tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
-                tf.keras.metrics.AUC(name='auc'), 
+                tf.keras.metrics.AUC(name='auc'),
                 tf.keras.metrics.AUC(name='prc', curve='PR'),
-                #tf.keras.metrics.TruePositives(name='tp'),
-                #tf.keras.metrics.FalsePositives(name='fp'),
-                #tf.keras.metrics.TrueNegatives(name='tn'),
-                #tf.keras.metrics.FalseNegatives(name='fn'),
                 #tf.keras.metrics.AUC(name='auc_weighted', label_weights= class_weights),
                 ##[tf.keras.metrics.Precision(class_id=i, name=f'precis_{i}') for i in range(4)],
                 ##[tf.keras.metrics.Recall(class_id=i, name=f'recall_{i}') for i in range(4)],
             ]
 
         if args.class_type == 'disease':
-            #args.n_classes = 38
-            #args.label_map_path = '../resources/label_maps/diseases_label_map.json'
-            args.n_classes = 3
-            args.label_map_path = '../resources/small_test/diseases_label_map.json'
+            args.n_classes = 38
+            args.label_map_path = '../resources/label_maps/diseases_label_map.json'
+            #args.n_classes = 3
+            #args.label_map_path = '../resources/small_test/diseases_label_map.json'
         elif args.class_type == 'plants':
             args.n_classes = 14
             args.label_map_path = '../resources/label_maps/plants_label_map.json'
@@ -285,44 +275,35 @@ def main():
         print(model.summary())
         print(model.inputs)
         print("----------")
-        for i, layer in enumerate(model.layers):
-            print(i, layer.name, layer.output_shape, layer.trainable)
-
-        #tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True)
-        #plt.show()
-        #print(tf.keras.utils.plot_model(model, show_shapes=True, show_dtype=True))
-        #plt.show()
-        #print("----------")
-        #for layer in model.layers:
-        #    if 'input' in layer.__class__.__name__:
-        #        print(layer.name, layer.input_shape)
-        #    if "InputLayer" == layer.__class__.__name__:
-        #        print(f"in normal layers : {layer.name}")
-        #    if "Functional" == layer.__class__.__name__:
-        #        for _l in layer.layers:
-        #            print(_l.name)
 
         tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs
         date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
         if args.polyloss:
             m_name = m_name+"_poly"
+
+        ##
+        m_name = m_name+"_dropout"
+        ##
         args.model_dir = os.path.join(args.output_dir, f"{m_name}_{date}")
         if not os.path.exists(args.model_dir):
             os.makedirs(args.model_dir)
-        
+
         # define wandb run and project
         if args.wandb:
             set_wandb_project_run(args, m_name)
 
         trained_model = train_model(args, m_name, model, train_set, valid_set, class_weights)
-        
+
+        if args.wandb:
+            model.save(os.path.join(wandb.run.dir, "model.h5"))
+
         if args.eval_during_training:
-            X_test, y_test = load_split_hdf5(args.dataset, 'test')
+            X_test, y_test = load_split_hdf5(args.dataset, 'valid')
 
             # Set parameters
             args.len_test = len(X_test)
-            args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
+           # args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
 
             if args.transformer:
                 test_set = load_from_disk(f'{args.fe_dataset}/test')
@@ -339,8 +320,8 @@ def main():
 
             test_set = prep_ds_input(args, test_set, args.len_test)
             logger.info("\n")
-            logger.info(f"  ***** Evaluating on Validation set *****")
-            compute_training_metrics(args, trained_model, m_name, mode, test_set)
+            logger.info(f"  ***** Evaluating on Test set *****")
+            compute_training_metrics(args, trained_model, m_name, test_set)
 
         if args.wandb:
             wandb.run.finish()

@@ -2,8 +2,6 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras import backend as K
-#from keras.preprocessing.image import ImageDataGenerator
-#from framework.utils import *
 import multiprocessing
 import gc
 
@@ -23,12 +21,13 @@ def get_mean_std(train_set):
 
 @tf.function
 def resize_img(img, label):
-    img = tf.image.resize(img, (299, 299))
+    img = tf.image.resize(img, (128, 128))
     return img, label
 
 
 @tf.function
 def encode_categorical(img, label, n_classes):
+    img, label = resize_img(img, label)
     label = tf.one_hot(label, n_classes,  dtype='uint8')
     return img, label
 
@@ -37,7 +36,6 @@ def to_vector(img, label):
     label = tf.expand_dims(label, axis=1)
     return img, label
 
-#@tf.function
 def prep_ds_input(args, ds, set_len):
     N_CPUS = multiprocessing.cpu_count()
     print(f"NBR CPUS: {N_CPUS}")
@@ -48,7 +46,8 @@ def prep_ds_input(args, ds, set_len):
     else:
         ds = ds.map(lambda elem, label: encode_categorical(
                     elem, label, args.n_classes), num_parallel_calls=N_CPUS)
-        ds = ds.shuffle(set_len, seed=args.seed).batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
+        #ds = ds.shuffle(set_len, seed=args.seed)
+        ds = ds.batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
 
 
@@ -78,7 +77,7 @@ def preprocess_image(tensor_img, mean_arr, std_arr, mode='centering'):
     tensor_img = tf.cast(tensor_img, tf.float32, name=None)
     train_mean = tf.convert_to_tensor(mean_arr, dtype=tf.float32)
     train_std = tf.convert_to_tensor(std_arr, dtype=tf.float32)
-    
+
     data_format = K.image_data_format()
     assert data_format == 'channels_last'
 

@@ -8,30 +8,14 @@ import matplotlib.cm as cm
 from IPython.display import Image, display
 from preprocess_tensor import preprocess_image
 
-#class My_GradCAM:
-#    def __init__(self, model, classIdx, inner_model=None, layerName=None):
-#        self.model = model
-#        self.classIdx = classIdx
-#        self.inner_model = inner_model
-#        if self.inner_model == None:
-#            self.inner_model = model
-#        self.layerName = layerName 
-#cam = My_GradCAM(model, None, inner_model=model.get_layer("vgg19"), layerName="block5_pool")
-#   gradModel = tensorflow.keras.models.Model(inputs=[self.inner_model.inputs],
-#                  outputs=[self.inner_model.get_layer(self.layerName).output,
-#                  self.inner_model.output])
-#       
-def get_model_and_target_layer(model):
-    for layer in model.layers:
-        print(layer.name, layer.output_shape)
-        if "Functional" == layer.__class__.__name__:
-            model = layer
-            for layer in reversed(model.layers):
-                # check to see if the layer has a 4D output
-                if len(layer.output_shape) == 4:
-                    return model, layer.name
-            raise ValueError("Could not find 4D layer. Cannot apply GradCAM.")
-	        
+
+def get_target_layer(model):
+    for layer in reversed(model.layers):
+        if len(layer.output_shape) == 4:
+            print(layer.name)
+            return layer
+    raise ValueError("Could not find 4D layer. Cannot apply GradCAM.")
+
 
 def make_gradcam_heatmap(args, model, m_name, mode, img_array, pred_index=None):
     """
@@ -42,32 +26,50 @@ def make_gradcam_heatmap(args, model, m_name, mode, img_array, pred_index=None):
     the gradients and produce a coarse localization map highlighting the important regions
     in the image for predicting that concept.
     """
+    print("make grad cam")
+    print(img_array.shape)
     img_array = img_array[np.newaxis, :]
-    model, last_conv = get_model_and_target_layer(model)
-    print(f"last conv: {last_conv}")
+    last_conv = get_target_layer(model)
     model.layers[-1].activation = None
-    # First, we create a model that maps the input image to the activations
-    # of the last conv layer as well as the output predictions
-    grad_model = tf.keras.models.Model(
-        [model.input], [model.get_layer(last_conv).output, model.output]
-    )
-    
+    if "Functional" == last_conv.__class__.__name__:
+        #final_conv = get_target_layer(last_conv)
+        final_conv = 'top_conv'
+        print(f"last conv: {last_conv.name}")
+        print(f"final conv: {final_conv.name}")
+        print(f"input: {model.get_layer(last_conv.name).get_layer('input_1').name}")
+        grad_model = tf.keras.models.Model(
+            [model.get_layer(last_conv.name).get_layer('input_1').input], [model.get_layer(last_conv.name).get_layer(final_conv.name).output, model.output]
+        )
+    else:
+        # First, we create a model that maps the input image to the activations
+        # of the last conv layer as well as the output predictions
+        grad_model = tf.keras.models.Model(
+            [model.input], [model.get_layer(last_conv).output, model.output]
+        )
+
     # Then, we compute the gradient of the top predicted class for our input image
     # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
+        img_array = tf.cast(img_array, tf.float32)
+        tape.watch(img_array)
         last_conv_layer_output, preds = grad_model(img_array)
+        # watch the conv_output_values
+        tape.watch(last_conv_layer_output)
         if pred_index is None:
             pred_index = tf.argmax(preds[0])
+        print(f"preds: {preds}")
         print(type(preds))
         print(preds.shape)
         print(pred_index.shape)
-        print(pred_index)
+        print(last_conv_layer_output.shape)
         class_channel = preds[:, pred_index]
+        print(class_channel)
 
     # This is the gradient of the output neuron (top predicted or chosen)
     # with regard to the output feature map of the last conv layer
     grads = tape.gradient(class_channel, last_conv_layer_output)
-
+    print(grads)
+    print(grads.shape)
     # This is a vector where each entry is the mean intensity of the gradient
     # over a specific feature map channel
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
@@ -98,14 +100,12 @@ def save_and_display_gradcam(args, model, m_name, mode, x_test, n_img, model_met
         TABLE_NAME = "gradcam_visualization"
         columns = ["image", "heat_map", "img + gradcam"]
         grad_cam_table = wandb.Table(columns=columns)
-    
+
     model.layers[-1].activation = None
     for id in img_ids:
+        #img = tf.cast(img, tf.float32)
         img = x_test[id]
         img = preprocess_image(img, args.mean_arr, args.std_arr, mode)
-        print(img)
-        print(type(img))
-        print(img.shape)
         heatmap = make_gradcam_heatmap(args, model, m_name, mode, img)
         # Rescale heatmap to a range 0-255
         heatmap = np.uint8(255 * heatmap)

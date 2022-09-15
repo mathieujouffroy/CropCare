@@ -5,7 +5,6 @@ __pycache__/
 
 resources/experiments
 resources/datasets
-resources/small_test
 resources/wandb
 Test
 

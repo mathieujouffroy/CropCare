@@ -5,35 +5,28 @@
 # the random seed, for reproducibility (set to null for no random seed)
 seed: 42
 
-# Images shape 
-input_shape: !!python/tuple [128, 128, 3]
-
-# the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
-class_type: 'disease'
-
 # the size of each batch of images when performing prediction
 batch_size: 32
 
-# Option to print all warnings related to data processing
-verbose: True
+wandb: False
 
-# Indicate if we are using pretrained transformers
+
+models: ['EfficientNetV2B3']
+#, 'InceptionResNetV2', 'DenseNet201', 'ResNet50V2', 'pret_ResNet50V2', 'pret_DenseNet201', 'pret_EfficientNetV2B3']
+
+class_type: 'disease'
+
 transformer: False
 
-wandb: True
-
 # the path to the directory of the dataset
-#dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
-dataset: '../resources/small_test/plant_dataset_209_split_sets.h5'
+dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_224.h5'
 
 # the path to the root directory used to store experiments
-xp_dir: 'wandb/RGB/Top-K'
+#xp_dir: '../wandb/Models'
+xp_dir: 'wandb'
 
-output_dir: 'experiments/comp-top-k'
-
-mean_arr: [118.94, 124.72, 104.59]
-std_arr: [49.35, 42.97, 54.13]
-augm_mean_arr: [118.14, 124.61, 104.01]
-augm_std_arr: [49.30, 42.62, 54.95]
-augmlab_mean_arr: [129.75, 122.14, 138.48]
-augmlab_std_arr: [44.66, 12.08, 15.12]
+output_dir: 'inference/best_models'
+# the name of log directory for an experiment (result of training)
+# you can set to 'last' to refer to the lastly created directory under in <xp_rootdir>
+#xp_name:
+##parser.add_argument("--eval_all_checkpoints", action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")

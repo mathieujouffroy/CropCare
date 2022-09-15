@@ -1,3 +1,4 @@
+from genericpath import isdir
 import math
 from utils import *
 from prep_data_train import *
@@ -5,6 +6,7 @@ from preprocess_tensor import *
 from metrics import compute_training_metrics, f1_m
 from datasets import load_from_disk
 import wandb
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ def evaluate_models(args, model_dict, test_dataset):
     #test_dir += "/test/"
 
     for name, model in model_dict.items():
+        args.model_dir = os.path.join(args.output_dir, f"{name}")
         if args.wandb:
             dir_name = args.output_dir.split('/')[-1]
             project_name = f"cropdis-{dir_name}"
@@ -62,10 +65,11 @@ def evaluate_models(args, model_dict, test_dataset):
 
         logger.info("\n")
         logger.info(f"  ***** Evaluating {name} Validation set *****")
-        #compute_training_metrics(args, model, test_dataset, m_type='eval_test')
-        
+        compute_training_metrics(args, model, name, test_dataset, m_type='eval_test')
+
+
         #wandb.sklearn.plot_summary_metrics(model, X_train, y_train, X_test, y_test)
-        
+
         if args.wandb:
             wandb.run.finish()
             print("\n\n--- FINISH WANDB RUN ---\n")
@@ -105,7 +109,7 @@ def main():
     # Set parameters
     args.len_test = len(X_test)
     args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
-    
+
 
     ## Create Dataset
     if args.transformer:
@@ -123,21 +127,24 @@ def main():
 
     test_set = prep_ds_input(args, test_set, args.len_test)
     for elem, label in test_set.take(1):
+        print(elem)
         img = elem[0].numpy()
-        print(f"element shape is {elem.shape}, type is {elem.dtype}")
+        #print(f"element shape is {elem.shape}, type is {elem.dtype}")
         print(f"image shape is {img.shape}, type: {img.dtype}")
         print(f"label shape is {label.shape} type: {label.dtype}")
 
     model_dict = dict()
     for model_dir in os.listdir(args.xp_dir):
         # Load the trained model saved to disk
-        model = tf.keras.models.load_model(
-                    f"{args.xp_dir}/{model_dir}/files/model-best.h5",
-                    custom_objects=dependencies)
-        print(model)
-        model_dict[model_dir] = model
- 
-    #evaluate_models(args, model_dict, test_set)
+        print(model_dir)
+        if os.path.isdir(f'{args.xp_dir}/{model_dir}'):
+            print(f'{args.xp_dir}/{model_dir}')
+            model = tf.keras.models.load_model(
+                        f"{args.xp_dir}/{model_dir}/files/model-best.h5",custom_objects=dependencies)
+            print(model.summary())
+            model_dict[model_dir] = model
+
+    evaluate_models(args, model_dict, test_set)
 
 if __name__ == '__main__':
     main()
@@ -151,11 +158,11 @@ if __name__ == '__main__':
 #    'alexnet':{'model':alexnet_model, 'mode':'centering', 't_type':None},
 #    'my_VGG16':{'model':vgg16_model, 'mode':'centering', 't_type':None},
 #    'my_Resnet50':{'model':Resnet50_model, 'mode':'sample_wise_scaling', 't_type':None},
-#        
+#
 #
 #    'VGG16':{'model':VGG16, 'mode':'centering', 't_type':None},
 #    'ResNet50V2':{'model':ResNet50V2, 'mode':'sample_wise_scaling', 't_type':None},
-#    'InceptionV3':{'model':InceptionV3, 'mode':'sample_wise_scaling', 't_type':None}, 
+#    'InceptionV3':{'model':InceptionV3, 'mode':'sample_wise_scaling', 't_type':None},
 #    'InceptionResNetV2':{'model':InceptionResNetV2, 'mode':'sample_wise_scaling', 't_type':None}, # For transfer learning InceptionResnetV2 needs img size (299, 299)
 #    'DenseNet201':{'model':DenseNet201, 'mode':'scale_std', 't_type':None},
 #    'EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':None},
@@ -170,9 +177,9 @@ if __name__ == '__main__':
 #    'pret_EfficientNetV2B3':{'model':EfficientNetV2B3, 'mode':None, 't_type':'transfer'},
 #
 #    # TRANSFORMERS
-#    # Keras 
+#    # Keras
 #    "pret_ConvNext":{'model':ConvNeXtSmall, 'mode':None, 't_type':'transfer'},
-#    # HuggingFace 
+#    # HuggingFace
 #    "ConvNext":{'model':TFConvNextModel.from_pretrained("facebook/convnext-tiny-224"), 'mode':None, 't_type':'transformer'},
 #    'VIT':{'model':TFViTModel.from_pretrained("google/vit-base-patch16-224"), 'mode':None, 't_type':'transformer'},
 #    'Swin':{'model':TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224"), 'mode':None, 't_type':'transformer'},

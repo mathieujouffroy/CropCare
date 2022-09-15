@@ -22,7 +22,7 @@ from custom_inception_model import *
 from preprocess_tensor import preprocess_image
 
 
-def simple_conv_model(input_shape, n_classes):
+def simple_conv_model(args, input_shape, n_classes, mode):
     """
     Implements the forward propagation for the model:
     CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> DENSE
@@ -36,8 +36,12 @@ def simple_conv_model(input_shape, n_classes):
 
     input_img = tf.keras.Input(shape=input_shape)
 
+    prep = tfl.Lambda(preprocess_image, arguments={
+                  'mean_arr': args.mean_arr, 'std_arr': args.std_arr, 'mode': mode})(input_img)
+
     Z1 = tfl.Conv2D(filters=8, kernel_size=(4, 4), strides=(
-        1, 1), padding='same', name='conv0')(input_img)
+    #    1, 1), padding='same', name='conv0')(input_img)
+        1, 1), padding='same', name='conv0')(prep)
     A1 = tfl.ReLU()(Z1)
     P1 = tfl.MaxPool2D(pool_size=(8, 8), strides=(
         8, 8), padding='same', name='max_pool0')(A1)
@@ -56,7 +60,8 @@ def simple_conv_model(input_shape, n_classes):
     return model
 
 
-def convolutional_model(input_shape, n_classes, mode=None, l2_decay=0.0, drop_rate=0, has_batch_norm=True):
+
+def convolutional_model(args, input_shape, n_classes, mode=None, l2_decay=0.0, drop_rate=0, has_batch_norm=True):
     """
     Nine-layer deep convolutional neural network. With 2 dense layer (11 total)
 
@@ -68,9 +73,11 @@ def convolutional_model(input_shape, n_classes, mode=None, l2_decay=0.0, drop_ra
     """
 
     input_img = tf.keras.Input(shape=input_shape)
-    
+
+    prep = tfl.Lambda(preprocess_image, arguments={'mean_arr': args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(input_img)
+
     Z1 = tfl.Conv2D(filters=32, kernel_size=(3, 3), padding='valid', name='conv0',
-                    kernel_regularizer=L2(l2_decay))(input_img)
+                    kernel_regularizer=L2(l2_decay))(prep)
     if (has_batch_norm):
         Z1 = keras.layers.BatchNormalization(
             axis=3, epsilon=1.001e-5)(Z1)
@@ -224,7 +231,7 @@ def vgg16_model(input_shape, n_classes, l2_decay=0.0, include_top=True, weights=
     A5 = tfl.ReLU()(Z5)
     P5 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool4')(A5)
 
-    
+
     if include_top:
         F = tfl.Flatten()(P5)
         Z6 = tfl.Dense(4096, activation='relu', name='FC1')(F)
@@ -370,8 +377,6 @@ def Resnet50_model(input_shape, n_classes, include_top=True, weights=None):
 
     # Define the input as a tensor with shape input_shape
     X_input = tfl.Input(input_shape)
-    #if mode:
-    #    X_input = preprocess_image(X_input, mode)
 
     # Zero-Padding
     X = tfl.ZeroPadding2D((3, 3))(X_input)
@@ -498,7 +503,7 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         # get last layer output, retrieve hidden states
         #vit = model.vit(inputs)[0]
         #convnext = model.convnext(inputs)[1]
-        x = model.swin(inputs)[1] 
+        x = model.swin(inputs)[1]
         # model.vit(inputs) -> outputs : TFBaseModelOutput,  [0] = last_hidden_state
         # ouputs = model(**inputs)
         # last_hidden_states = outputs.last_hidden_state
@@ -509,30 +514,34 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)
     else:
-        
-        base_model = model(input_shape=input_shape, include_top=False, weights=weights)
-        
+        inputs = tfl.Input(shape=input_shape)
+        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
+        #x = tfl.Lambda(preprocess_image, arguments={'mean_arr':args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(inputs)
+
+        base_model = model(input_tensor=x,
+        #base_model = model(input_shape=input_shape,
+                           include_top=False, weights=weights)
+
         if t_type == 'transfer':
             base_model.trainable = False
         else:
             # unfreeze all or part of the base model and retrain the whole model end-to-end
             base_model.trainable = True
 
-        inputs = tfl.Input(shape=input_shape)
-        #x = tfl.Lambda(preprocess_image)(inputs, args.mean_arr, args.std_arr, mode)
-        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
-    
+        #inputs = tfl.Input(shape=input_shape)
+        #x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
+
         if t_type == 'transfer':
             # keep the BatchNormalization layers in inference mode by passing training=False
             x = base_model(x, training=False)
         else:
             x = base_model(x, training=True)
 
-           
         x = keras.layers.GlobalAveragePooling2D()(x)
-        #x = keras.layers.Dropout(0.2)(x)
+        x = keras.layers.Dropout(0.2)(x)
         outputs = keras.layers.Dense(
             n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
+
         model = keras.Model(inputs, outputs)
 
     return (model, mode)
@@ -550,26 +559,24 @@ def get_models(args, n_classes, we=None):
     d_subset = {key: model_d[key] for key in to_test}
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
-        model, mode = set_model(params['model'], params['mode'])
-        t_type = params['t_type']
-        if t_type in ['transfer', 'finetune']:
-            weights = 'imagenet'
+        if name == "baseline_samplewise":
+            mode = 'scale_std'
+            model = convolutional_model(args, input_shape, n_classes=n_classes, mode=mode)
+            models_to_test[name] = (model, mode)
+        elif name == "simple_std":
+            mode = 'sample_wise_scaling'
+            model = simple_conv_model(args,
+                input_shape, n_classes=n_classes, mode=mode)
+            models_to_test[name] = (model, mode)
         else:
-            weights = None
-        models_to_test[name] = prepare_model(args, model, input_shape, n_classes, mode, t_type, weights)
+            model, mode = set_model(params['model'], params['mode'])
+            t_type = params['t_type']
+            if t_type in ['transfer', 'finetune']:
+                weights = 'imagenet'
+            else:
+                weights = None
+            models_to_test[name] = prepare_model(args, model, input_shape, n_classes, mode, t_type, weights)
+
     return models_to_test
-    #'baseline_sample_scale': simple_conv_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
-    #'baseline_sample_st': simple_conv_model(input_shape, n_classes=n_classes, mode='scale_std'),
-    #'basic_conv_centstd': convolutional_model(input_shape, n_classes=n_classes, mode='scale_std'),
-    #'basic_conv_samplewise': convolutional_model(input_shape, n_classes=n_classes, mode='sample_wise_scaling'),
-    #'alexnet': alexnet_model(input_shape, n_classes=n_classes, mode='centering'),
 
-### BASELINE
-## omit batch norm -≥ then add quickly batch norm
-## small regularization at start
-## add dropout 2nd run
-## early stopping from 1st run
-## TEST MODEL TRAINED ON IMAGENET
 #tensorboard --logdir logs/fit
-
-

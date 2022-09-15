@@ -5,9 +5,8 @@
 # the random seed, for reproducibility
 seed: 42
 
-# Images shape 
-#input_shape: !!python/tuple [128, 128, 3]
-input_shape: !!python/tuple [256, 256, 3]
+# Images shape
+input_shape: !!python/tuple [128, 128, 3]
 
 # the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
 class_type: 'disease'
@@ -16,8 +15,7 @@ class_type: 'disease'
 batch_size: 32
 
 # Total number of training epochs to perform.
-n_epochs: 1
-#n_epochs: 20
+n_epochs: 20
 
 # the optimizer to use
 optimizer: 'adam'
@@ -29,21 +27,21 @@ learning_rate: 0.001
 class_weights: True
 
 # Option to use PolyLoss as loss function
-polyloss: True
+polyloss: False
 
 # option to compute advanced metrics while training multiple models
-eval_during_training: True
+eval_during_training: False
 
-#, 'InceptionResNetV2']
-#'pret_EfficientNetV2B3',
-models: ['InceptionResNetV2']
+models: ["pret_EfficientNetV2B3"]
+#, "InceptionResNetV2", "ResNet50V2","InceptionV3","DenseNet201", "EfficientNetV2B3", "pret_ResNet50V2","pret_DenseNet201","pret_EfficientNetV2B3"]
+#"LAB_2path_InceptionV3", "LAB_2path_InceptionResNetV2",
 
 
 # Option to print all warnings related to data processing
 verbose: True
 
 # Option to use wandb for logging
-wandb: False
+wandb: True
 
 # Option to overwrite the content of the output directory
 overwrite_output_dir: True
@@ -52,19 +50,15 @@ overwrite_output_dir: True
 transformer: False
 
 # the path to the directory of the dataset
-#dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
-dataset: '../resources/small_test/plant_dataset_209_split_sets.h5'
+dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
 fe_dataset: '../resources/datasets/transformers_ds_224/vit'
 
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/comp-top-k'  # -> all augmented
 
-# NORMAL
-#mean_arr: [118.94, 124.72, 104.59]
-#std_arr: [49.35, 42.97, 54.13]
-# AUGM 128
-mean_arr: [118.26, 124.73, 104.13]
-std_arr: [48.91, 42.17, 53.59]
-# AUGM  LAB  128
-#mean_arr: [129.75, 122.14, 138.48]
-#std_arr: [44.66, 12.08, 15.12]
+mean_arr: [118.94, 124.72, 104.59]
+std_arr: [49.35, 42.97, 54.13]
+augm_mean_arr: [118.14, 124.61, 104.01]
+augm_std_arr: [49.30, 42.62, 54.95]
+augmlab_mean_arr: [129.75, 122.14, 138.48]
+augmlab_std_arr: [44.66, 12.08, 15.12]
