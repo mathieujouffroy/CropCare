@@ -6,10 +6,7 @@ __pycache__/
 resources/experiments
 resources/datasets
 resources/wandb
-Test
-
-train_framework/wandb
-train_framework/experiments
+resources/small_test
 
 .DS_Store
 .env
@@ -18,3 +15,9 @@ train_framework/experiments
 *md
 *.ipynb
 */*.h5
+
+train_framework/Best_models
+train_framework/wandb
+train_framework/experiments
+Img_test_app
+Img_test_app/*

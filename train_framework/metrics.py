@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.metrics import auc, roc_auc_score, roc_curve, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 from tensorflow.keras import backend as K
-from interpretability import *
+#from interpretability import *
 from train import logger
 
 
@@ -158,6 +158,18 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
     y_pred = y_probs.argmax(axis=-1)
 
     logger.info(f"  Shape of y_pred:{y_pred.shape}")
+    ###
+    for img, label in zip(x_test, y_test):
+        yyy = model.predict(x_test)
+        y_ppp = yyy.argmax(axis=-1)
+        label = label.argmax(axis=-1)
+        truth_label_names = [CLASS_INDEX[str(y)] for y in label]
+        pred_label_names = [CLASS_INDEX[str(y)] for y in pred_label_names]
+        print(label)
+        print(y_ppp)
+        print(truth_label_names)
+        print(pred_label_names)
+	###
 
     if args.loss != 'binary_crossentropy':
         y_test = y_test.argmax(axis=-1)
@@ -210,10 +222,10 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                    model_metrics_dir, m_type)
+    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                model_metrics_dir, m_type)
 
-    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                     model_metrics_dir, m_type)
+    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                 model_metrics_dir, m_type)
     # MODEL INTERPRETABILITY
     #save_and_display_gradcam(args, model, m_name, mode, x_test, 4, model_metrics_dir)
