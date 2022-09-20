@@ -53,8 +53,8 @@ with open("../resources/label_maps/diseases_label_map.json") as f:
     CLASS_INDEX = json.load(f)
 
 @tf.function
-def resize_img(img):
-    img = tf.image.resize(img, (224, 224))
+def resize_img(img, shape):
+    img = tf.image.resize(img, shape)
     #img = tf.image.resize(img, (128, 128))
     return img
 
@@ -72,34 +72,31 @@ def classify_image(input, label, model):
     input = tf.convert_to_tensor(input)
     input = tf.expand_dims(input, 0)  # Create batch axis
     input = tf.cast(input, tf.float32)
-    input = resize_img(input)
-    print(input.shape)
-    
+    #input = resize_img(input)
 
     if model == 'EfficientNetV2B3':
         clf =  tf.keras.models.load_model("Best_models/pret_EfficientNetV2B3_dropout/model-best.h5",custom_objects=dependencies)
+        input = resize_img(input, (128, 128))
     elif model == 'ConvNext':
         clf =  tf.keras.models.load_model("Best_models/ConvNext/model-best.h5",custom_objects={'f1_m': f1_m, 'LayerScale':LayerScale})
+        input = resize_img(input, (224, 224))
     elif model == 'InceptionV3':
-        clf =  tf.keras.models.load_model("../resources/experiments/comp-top-k/InceptionV3_dropout_16:09:2022_07:31:58",custom_objects=dependencies)
+        clf =  tf.keras.models.load_model("Best_models/pret_InceptionV3_dropout/model-best.h5",custom_objects=dependencies)
+        input = resize_img(input, (128, 128))
     elif model == 'DenseNet201':
         #input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
         clf = tf.keras.models.load_model("Best_models/pret_DenseNet201/model-best.h5", custom_objects=dependencies)
+        input = resize_img(input, (128, 128))
     elif model == 'ResNet50V2':
         clf = tf.keras.models.load_model("Best_models/pret_ResNet50V2/model-best.h5",custom_objects=dependencies)
+        input = resize_img(input, (128, 128))
 
-
-    
+    print(input.shape)
     y_probs = clf.predict(input)
     y_pred = np.argmax(y_probs, axis=-1)
     pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
     pred = pred_label_names[0]
-    print(pred)
     return pred
-    #y_pred = np.argmax(y_probs, axis=-1)
-    #pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
-    #pred = pred_label_names[0]
-    #return pred
 
 demo = gr.Interface(
             fn=classify_image, 
