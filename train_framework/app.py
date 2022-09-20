@@ -80,9 +80,6 @@ def classify_image(input, label, model):
     elif model == 'ConvNext':
         clf =  tf.keras.models.load_model("Best_models/ConvNext/model-best.h5",custom_objects={'f1_m': f1_m, 'LayerScale':LayerScale})
         input = resize_img(input, (224, 224))
-    elif model == 'InceptionV3':
-        clf =  tf.keras.models.load_model("Best_models/pret_InceptionV3_dropout/model-best.h5",custom_objects=dependencies)
-        input = resize_img(input, (128, 128))
     elif model == 'DenseNet201':
         #input = tf.keras.applications.mobilenet_v2.preprocess_input(input)
         clf = tf.keras.models.load_model("Best_models/pret_DenseNet201/model-best.h5", custom_objects=dependencies)
@@ -101,25 +98,25 @@ def classify_image(input, label, model):
 demo = gr.Interface(
             fn=classify_image, 
             inputs=[
-              gr.Image(shape=(128, 128)),
+              gr.Image(shape=(256, 256)),
 			  gr.Textbox(value='Apple Healthy', label='label'),
-              gr.Dropdown(choices=['EfficientNetV2B3','InceptionV3','ConvNext', 'ResNet50V2', 'DenseNet201'], type="value", label='model'),
+              gr.Dropdown(choices=['EfficientNetV2B3', 'ConvNext', 'ResNet50V2', 'DenseNet201'], type="value", label='model'),
               #gr.Checkbox(label="Remove Background"),
               ],
             outputs=gr.Label(num_top_classes=3),
             examples=[
-			  ["../Img_test_app/Apple_Black_rot/image (14).JPG", 'Apple Black Rot'],
-			  ["../Img_test_app/Apple_Black_rot/image (29).JPG", 'Apple Black Rot'],
-			  ["../Img_test_app/Blueberry_healthy/image (23).JPG", 'Blueberry healthy'],
-			  ["../Img_test_app/Blueberry_healthy/image (34).JPG", 'Blueberry healthy'],
+			  ["Img_test_app/Apple_Black_rot/image (14).JPG", 'Apple Black Rot'],
+			  ["Img_test_app/Apple_Black_rot/image (29).JPG", 'Apple Black Rot'],
+			  ["Img_test_app/Blueberry_healthy/image (23).JPG", 'Blueberry healthy'],
+			  ["Img_test_app/Blueberry_healthy/image (34).JPG", 'Blueberry healthy'],
 
-			  ["../Img_test_app/Cherry_Powdery_Mildew/image (30).JPG", 'Cherry Powdery Mildew'],
-			  ["../Img_test_app/Cherry_Powdery_Mildew/image (77).JPG", 'Cherry Powdery Mildew'],
-			  ["../Img_test_app/Corn_Northern_Leaf_Blight/image (17).JPG", 'Corn Northern Leaf Blight'],
-			  ["../Img_test_app/Corn_Northern_Leaf_Blight/image (37).JPG", 'Corn Northern Leaf Blight'],
-			  ["../Img_test_app/Grape_Black_rot/image (28).JPG", 'Grape Black Rot'],
-			  ["../Img_test_app/Grape_Black_rot/image (128).JPG", 'Grape Black Rot'],
-			  ["../Img_test_app/Grape_Black_rot/image (136).JPG", 'Grape Black Rot'],
+			  ["Img_test_app/Cherry_Powdery_Mildew/image (30).JPG", 'Cherry Powdery Mildew'],
+			  ["Img_test_app/Cherry_Powdery_Mildew/image (77).JPG", 'Cherry Powdery Mildew'],
+			  ["Img_test_app/Corn_Northern_Leaf_Blight/image (17).JPG", 'Corn Northern Leaf Blight'],
+			  ["Img_test_app/Corn_Northern_Leaf_Blight/image (37).JPG", 'Corn Northern Leaf Blight'],
+			  ["Img_test_app/Grape_Black_rot/image (28).JPG", 'Grape Black Rot'],
+			  ["Img_test_app/Grape_Black_rot/image (128).JPG", 'Grape Black Rot'],
+			  ["Img_test_app/Grape_Black_rot/image (136).JPG", 'Grape Black Rot'],
               ],
             #interpretation="shap",
             #num_shap=3,
