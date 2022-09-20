@@ -115,8 +115,6 @@ demo = gr.Interface(
 			  ["Img_test_app/Corn_Northern_Leaf_Blight/image (17).JPG", 'Corn Northern Leaf Blight'],
 			  ["Img_test_app/Corn_Northern_Leaf_Blight/image (37).JPG", 'Corn Northern Leaf Blight'],
 			  ["Img_test_app/Grape_Black_rot/image (28).JPG", 'Grape Black Rot'],
-			  ["Img_test_app/Grape_Black_rot/image (128).JPG", 'Grape Black Rot'],
-			  ["Img_test_app/Grape_Black_rot/image (136).JPG", 'Grape Black Rot'],
               ],
             #interpretation="shap",
             #num_shap=3,
