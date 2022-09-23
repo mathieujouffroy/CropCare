@@ -1,5 +1,5 @@
 # Vi2PC
-Plant Disease Classification
+PopYourCrop
 
 ## CLI
 Command Line Interface used to generate the dataset.
