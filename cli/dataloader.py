@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
 from PIL import Image
-from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
+#from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
 
 RANDOM_SEED = 42
 
@@ -161,13 +161,11 @@ class PlantDataset():
                     absolute_file_name = img_folder_name+'/'+img_file
                     image = cv2.imread(absolute_file_name)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    #image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
                     if (image.shape != self.img_shape):
                         if (image.shape[-1] != self.img_shape[-1]):
                             print(
                                 f"Found wrong image shape: {absolute_file_name}.\nShape {image.shape} instead of {self.img_shape}")
                         if (image.shape[0] > self.img_shape[0]):
-                            #print(image.shape)
                             image = cv2.resize(image, (256, 256), interpolation=cv2.INTER_AREA)
 
                     images_lst.append(image)
@@ -215,12 +213,9 @@ class PlantDataset():
         for x in images_lst:
             if x.dtype != 'uint8':
                 print(x.dtype)
-        #print(images_lst)
-        #images_arr = np.array(images_lst)#, dtype=np.uint8)
         images_arr = np.array(images_lst, dtype=object)
         healthy_arr = np.array(healthy_lst).astype(int).astype(bool)
 
-        # {"label":id} -> reversed
         plants_d = {i: np.unique(plant_lst)[i]
                     for i in range(len(np.unique(plant_lst)))}
         diseases_d = {i: np.unique(disease_lst)[i]

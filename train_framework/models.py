@@ -41,7 +41,6 @@ def simple_conv_model(args, input_shape, n_classes, mode):
                   'mean_arr': args.mean_arr, 'std_arr': args.std_arr, 'mode': mode})(input_img)
 
     Z1 = tfl.Conv2D(filters=8, kernel_size=(4, 4), strides=(
-    #    1, 1), padding='same', name='conv0')(input_img)
         1, 1), padding='same', name='conv0')(prep)
     A1 = tfl.ReLU()(Z1)
     P1 = tfl.MaxPool2D(pool_size=(8, 8), strides=(
@@ -114,7 +113,6 @@ def convolutional_model(args, input_shape, n_classes, mode=None, l2_decay=0.0, d
 
 
 def alexnet_model(input_shape, n_classes, l2_decay=0.0, drop_rate=0.5):
-    # resize to 227
     input_img = tf.keras.Input(shape=input_shape)
 
     # Layer 1
@@ -171,105 +169,13 @@ def alexnet_model(input_shape, n_classes, l2_decay=0.0, drop_rate=0.5):
     Z8 = tfl.BatchNormalization()(Z8)
 
     outputs = tfl.Softmax(units=n_classes, name='predictions')(Z8)
-
     model = tf.keras.Model(inputs=input_img, outputs=outputs)
-
     return model
 
 
-def vgg16_model(input_shape, n_classes, l2_decay=0.0, include_top=True, weights=None):
-    input_img = tf.keras.Input(shape=input_shape)
-
-    # Block 1
-    Z1 = tfl.Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), name='conv0', padding='same',
-                    kernel_regularizer=L2(l2_decay))(input_img)
-    A1 = tfl.ReLU()(Z1)
-    Z1 = tfl.Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), name='conv1', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z1)
-    A1 = tfl.ReLU()(Z1)
-    P1 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool0')(A1)
-
-    # Block 2
-    Z2 = tfl.Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), name='conv2', padding='same',
-                    kernel_regularizer=L2(l2_decay))(P1)
-    A2 = tfl.ReLU()(Z2)
-    Z2 = tfl.Conv2D(filters=128, kernel_size=(3, 3), strides=(1, 1), name='conv3', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z2)
-    A2 = tfl.ReLU()(Z2)
-    P2 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool1')(A2)
-
-    # Block 3
-    Z3 = tfl.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), name='conv4', padding='same',
-                    kernel_regularizer=L2(l2_decay))(P2)
-    A3 = tfl.ReLU()(Z3)
-    Z3 = tfl.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), name='conv5', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z3)
-    A3 = tfl.ReLU()(Z3)
-    Z3 = tfl.Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), name='conv6', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z3)
-    A3 = tfl.ReLU()(Z3)
-    P3 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool2')(A3)
-
-    # Block 4
-    Z4 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv7', padding='same',
-                    kernel_regularizer=L2(l2_decay))(P3)
-    A4 = tfl.ReLU()(Z4)
-    Z4 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv8', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z4)
-    A4 = tfl.ReLU()(Z4)
-    Z4 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv9', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z4)
-    A4 = tfl.ReLU()(Z4)
-    P4 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool3')(A4)
-
-    # Block 5
-    Z5 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv10', padding='same',
-                    kernel_regularizer=L2(l2_decay))(P4)
-    Z5 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv11', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z5)
-    Z5 = tfl.Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), name='conv12', padding='same',
-                    kernel_regularizer=L2(l2_decay))(Z5)
-    A5 = tfl.ReLU()(Z5)
-    P5 = tfl.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name='max_pool4')(A5)
-
-
-    if include_top:
-        F = tfl.Flatten()(P5)
-        Z6 = tfl.Dense(4096, activation='relu', name='FC1')(F)
-        Z7 = tfl.Dense(4096, activation='relu', name='FC2')(Z6)
-        Z8 = tfl.Dense(n_classes, name='FC2')(Z7)
-        outputs = tfl.Dense(n_classes, activation='softmax', name='predictions')(Z8)
-    else:
-        outputs = P5
-
-    model = tf.keras.Model(inputs=input_img, outputs=outputs)
-
-    # Load weights.
-    if weights == 'imagenet':
-        if include_top:
-            file_name = 'vgg16' + '_weights_tf_dim_ordering_tf_kernels.h5'
-            file_hash = '64373286793e3c8b2b4e3219cbf3544b'
-        else:
-            file_name = 'vgg16' + 'weights_tf_dim_ordering_tf_kernels_notop.h5'
-            file_hash = '6d6bbae143d832006294945121d1f1fc'
-
-        weights_path = get_file(
-            file_name,
-            'https://storage.googleapis.com/tensorflow/keras-applications/vgg16/' + file_name,
-            cache_subdir='models',
-            file_hash=file_hash)
-        model.load_weights(weights_path)
-
-    elif weights is not None:
-      model.load_weights(weights)
-
-    return model
-
-
-## RESNET
 def identity_block(X, f, filters, training=True, initializer=random_uniform):
     """
-    Implementation of the identity block as defined in Figure 4
+    Implementation of the identity block.
 
     Arguments:
     X -- input tensor of shape (m, n_H_prev, n_W_prev, n_C_prev)
@@ -353,12 +259,10 @@ def convolutional_block(X, f, filters, s=2, training=True, initializer=glorot_un
                    padding='valid', kernel_initializer=initializer(seed=0))(X)
     X = tfl.BatchNormalization(axis=3)(X, training=training)
 
-    ##### SHORTCUT PATH #####
     X_shortcut = tfl.Conv2D(filters=F3, kernel_size=1, strides=(
         s, s), padding='valid', kernel_initializer=initializer(seed=0))(X_shortcut)
     X_shortcut = tfl.BatchNormalization(axis=3)(X_shortcut, training=training)
 
-    # Final step: Add shortcut value to main path (Use this order [X, X_shortcut]), and pass it through a RELU activation
     X = tfl.Add()([X, X_shortcut])
     X = tfl.Activation('relu')(X)
 
@@ -426,25 +330,14 @@ def Resnet50_model(input_shape, n_classes, include_top=True, weights=None):
     model = tf.keras.Model(inputs=X_input, outputs=X)
 
     # Load weights.
-    if weights == 'imagenet':
-        if include_top:
-            file_name = 'resnet' + '_weights_tf_dim_ordering_tf_kernels.h5'
-            file_hash = '2cb95161c43110f7111970584f804107'
-        else:
-            file_name = 'resnet' + '_weights_tf_dim_ordering_tf_kernels_notop.h5'
-            file_hash = '4d473c1dd8becc155b73f8504c6f6626'
-        weights_path = get_file(
-            file_name,
-            'https://storage.googleapis.com/tensorflow/keras-applications/resnet/' + file_name,
-            cache_subdir='models',
-            file_hash=file_hash)
-        model.load_weights(weights_path)
-    elif weights is not None:
+    if weights is not None:
       model.load_weights(weights)
 
     return model
 
+
 def set_model(model, mode):
+    """ Set out models with their appropriate preprocessing functions. """
     if model == 'VGG16':
         model = VGG16
         if mode == 'keras_imgnet':
@@ -520,7 +413,6 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         #x = tfl.Lambda(preprocess_image, arguments={'mean_arr':args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(inputs)
 
         base_model = model(input_tensor=x,
-        #base_model = model(input_shape=input_shape,
                            include_top=False, weights=weights)
 
         if t_type == 'transfer':
@@ -528,9 +420,6 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         else:
             # unfreeze all or part of the base model and retrain the whole model end-to-end
             base_model.trainable = True
-
-        #inputs = tfl.Input(shape=input_shape)
-        #x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
 
         if t_type == 'transfer':
             # keep the BatchNormalization layers in inference mode by passing training=False

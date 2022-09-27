@@ -67,13 +67,14 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     """
     Training model on train
     Parameters:
-        args():
-        model_tupl(tupl):
-        train_set(tensorflow.Dataset):
-        valid_set(tensorflow.Dataset):
-        class_weights:
+        args: Argument Parser
+        m_name: Model name
+        model: Model to train 
+        train_set(tensorflow.Dataset): training set 
+        valid_set(tensorflow.Dataset): validation set
+        class_weights: Weights for imbalanced classification
     Returns:
-        model(tensorflow.Model):
+        model(tensorflow.Model): trained model
     """
 
     # Prepare optimizer
@@ -173,8 +174,8 @@ def main():
                 tf.keras.metrics.AUC(name='auc'),
                 tf.keras.metrics.AUC(name='prc', curve='PR'),
                 #tf.keras.metrics.AUC(name='auc_weighted', label_weights= class_weights),
-                ##[tf.keras.metrics.Precision(class_id=i, name=f'precis_{i}') for i in range(4)],
-                ##[tf.keras.metrics.Recall(class_id=i, name=f'recall_{i}') for i in range(4)],
+                ##[tf.keras.metrics.Precision(class_id=i, name=f'precis_{i}') for i in range(5)],
+                ##[tf.keras.metrics.Recall(class_id=i, name=f'recall_{i}') for i in range(5)],
             ]
 
         if args.class_type == 'disease':
@@ -191,7 +192,7 @@ def main():
             id2label = json.load(f)
 
         args.class_names = [str(v) for k,v in id2label.items()]
-        print(f"  Class names = {args.class_names}")
+        logger.info(f"  Class names = {args.class_names}")
 
     # Load the dataset
     X_train, y_train = load_split_hdf5(args.dataset, 'train')
@@ -210,10 +211,11 @@ def main():
     if args.transformer:
         del X_train, X_valid, y_train, y_valid
         gc.collect()
+        img_size = (224, 224)
         train_set = load_from_disk(f'{args.fe_dataset}/train')
         valid_set = load_from_disk(f'{args.fe_dataset}/valid')
         data_collator = DefaultDataCollator(return_tensors="tf")
-        print(train_set.features["labels"].names)
+        logger.info(train_set.features["labels"].names)
         train_set = train_set.to_tf_dataset(
                     columns=['pixel_values'],
                     label_cols=["labels"],
@@ -227,19 +229,20 @@ def main():
                     batch_size=32,
                     collate_fn=data_collator)
     else:
+        img_size = (128, 128)
         train_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         valid_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         del X_train, X_valid, y_train, y_valid
         gc.collect()
 
-    train_set = prep_ds_input(args, train_set, args.len_train)
-    valid_set = prep_ds_input(args, valid_set, args.len_valid)
+    train_set = prep_ds_input(args, train_set, args.len_train, img_size)
+    valid_set = prep_ds_input(args, valid_set, args.len_valid, img_size)
 
     for elem, label in train_set.take(1):
         img = elem[0].numpy()
-        print(f"element shape is {elem.shape}, type is {elem.dtype}")
-        print(f"image shape is {img.shape}, type: {img.dtype}")
-        print(f"label shape is {label.shape} type: {label.dtype}")
+        logger.info(f"element shape is {elem.shape}, type is {elem.dtype}")
+        logger.info(f"image shape is {img.shape}, type: {img.dtype}")
+        logger.info(f"label shape is {label.shape} type: {label.dtype}")
 
     # Retrieve Models to evaluate
     if args.n_classes == 2:
@@ -268,11 +271,6 @@ def main():
     for m_name, model_tupl in models_dict.items():
         model = model_tupl[0]
         mode = model_tupl[1]
-        print(f"mode:{mode}")
-        print(f"model:{m_name}")
-        print(model.summary())
-        print(model.inputs)
-        print("----------")
 
         tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs
@@ -280,9 +278,6 @@ def main():
         if args.polyloss:
             m_name = m_name+"_poly"
 
-        ##
-        m_name = m_name+"_dropout"
-        ##
         args.model_dir = os.path.join(args.output_dir, f"{m_name}_{date}")
         if not os.path.exists(args.model_dir):
             os.makedirs(args.model_dir)
@@ -293,17 +288,14 @@ def main():
 
         trained_model = train_model(args, m_name, model, train_set, valid_set, class_weights)
 
-        if args.wandb:
-            model.save(os.path.join(wandb.run.dir, "model.h5"))
-
         if args.eval_during_training:
-            X_test, y_test = load_split_hdf5(args.dataset, 'valid')
+            X_test, y_test = load_split_hdf5(args.dataset, 'test')
 
             # Set parameters
             args.len_test = len(X_test)
-           # args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
 
             if args.transformer:
+                img_size = (224, 224)
                 test_set = load_from_disk(f'{args.fe_dataset}/test')
                 data_collator = DefaultDataCollator(return_tensors="tf")
                 print(test_set.features["labels"].names)
@@ -314,16 +306,15 @@ def main():
                             batch_size=32,
                             collate_fn=data_collator)
             else:
+                img_size = (128, 128)
                 test_set = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
-            test_set = prep_ds_input(args, test_set, args.len_test)
-            logger.info("\n")
-            logger.info(f"  ***** Evaluating on Test set *****")
+            test_set = prep_ds_input(args, test_set, args.len_test, img_size)
+            logger.info(f"\n  ***** Evaluating on Test set *****")
             compute_training_metrics(args, trained_model, m_name, test_set)
 
         if args.wandb:
             wandb.run.finish()
-            print("\n\n--- FINISH WANDB RUN ---\n")
 
 if __name__ == "__main__":
     main()

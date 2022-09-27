@@ -34,13 +34,13 @@ class YamlNamespace(argparse.Namespace):
 
 
 def set_logging(args, type="train"):
+    "Defines the file in which we will write or training logs"
+
     date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
     if type == 'train':
         file_name = f"RUN_{date}.log"
     elif type == 'infer':
         file_name = f"INFER_{date}.log"
-    elif type == 'data':
-        file_name = f"DATA_{date}.log"
     
     if type == 'train':
         log_dir = os.path.join(args.output_dir, file_name)
@@ -58,9 +58,10 @@ def set_seed(args):
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
 
+
 def wandb_cfg(args, n_training_steps):
     # enforced max for this is ceil(NUM_VAL/batch_size)
-    NUM_LOG_BATCHES = 16
+    NUM_LOG_BATCHES = 32
 
     # SETUP WANDB
     config_dict = {
@@ -83,8 +84,6 @@ def wandb_cfg(args, n_training_steps):
         "loss": args.loss,
     }
 
-    # nbr validation data batches to log when computing metrics at end of each epoch
-    #max_log_batches = int(np.ceil(float(config_dict["valid_set_len"])/float(config_dict["eval_batch_size"])))
     max_log_batches = 1
     # change to max to log ALL the available images to a Table
     config_dict["num_log_batches"] = min(max_log_batches, NUM_LOG_BATCHES)
@@ -93,6 +92,8 @@ def wandb_cfg(args, n_training_steps):
 
 
 def set_wandb_project_run(args, run_name):
+    """ Initialize wandb directory to keep track of our models. """
+    
     dir_name = args.output_dir.split('/')[-1]
     project_name = f"cropdis-{dir_name}"
     cfg = wandb_cfg(args, args.n_training_steps)
@@ -100,8 +101,10 @@ def set_wandb_project_run(args, run_name):
                      job_type="train", name=run_name, config=cfg, reinit=True)
     assert run is wandb.run
 
+
 def parse_args():
-    """ Parse training paremeters from config YAML file """
+    """ Parse training paremeters from config YAML file. """
+
     parser = argparse.ArgumentParser(
         description='Train a model for plant disease classification.')
     parser.add_argument('--config', '-c', type=str, required=True,

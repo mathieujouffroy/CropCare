@@ -16,7 +16,8 @@ from train import logger
 
 
 def recall_m(y_true, y_pred):
-    """Recall metric.
+    """
+    Recall metric.
     Only computes a batch-wise average of recall.
     Computes the recall, a metric for multi-label classification of
     how many relevant items are selected.
@@ -28,7 +29,8 @@ def recall_m(y_true, y_pred):
 
 
 def precision_m(y_true, y_pred):
-    """Precision metric.
+    """
+    Precision metric.
     Only computes a batch-wise average of precision.
     Computes the precision, a metric for multi-label classification of
     how many selected items are relevant.
@@ -40,12 +42,16 @@ def precision_m(y_true, y_pred):
 
 
 def f1_m(y_true, y_pred):
+    """ F1 Score """
+
     precision = precision_m(y_true, y_pred)
     recall = recall_m(y_true, y_pred)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
 def matt_coeff(y_true, y_pred):
+    """ Matthews correlation coefficient. """
+
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -60,6 +66,8 @@ def matt_coeff(y_true, y_pred):
 
 
 def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
+    """ Plots the ROC curves for our classes. """
+
     fig, c_ax = plt.subplots(1, 1, figsize=(18, 18))
 
     # Transform problem in One vs All
@@ -95,6 +103,8 @@ def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
 
 
 def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
+    """ Plots the precision and recall curves for our classes. """
+
     fig, c_ax = plt.subplots(1, 1, figsize=(18, 18))
     # Transform problem in One vs All
     lb = LabelBinarizer()
@@ -121,12 +131,7 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
 
 
 def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
-    """
-    Compute training metrics for model evaluation.
-
-    Args:
-        args
-    """
+    """ Compute training metrics for model evaluation. """
 
     if m_type == "test":
         model_metrics_dir = os.path.join(args.output_dir, "metrics_test")
@@ -141,11 +146,6 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
 
     with open(args.label_map_path) as f:
         CLASS_INDEX = json.load(f)
-
-    print(x_test.shape)
-
-    #print('\n\n ==== CLASS INDEX ==== \n')
-    #print(CLASS_INDEX)
 
     results = model.evaluate(x_test, y_test, verbose=0)
     logger.info(f"  Result of evaluation:")
@@ -222,10 +222,10 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-    #                model_metrics_dir, m_type)
+    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                    model_metrics_dir, m_type)
 
-    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-    #                 model_metrics_dir, m_type)
+    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                     model_metrics_dir, m_type)
     # MODEL INTERPRETABILITY
     #save_and_display_gradcam(args, model, m_name, mode, x_test, 4, model_metrics_dir)

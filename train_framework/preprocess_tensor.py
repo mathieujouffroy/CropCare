@@ -12,6 +12,7 @@ def get_mean_std(train_set):
     These metrics are the mean and the standard deviation for each
     color channel (RGB).
     """
+
     train_set = tf.cast(train_set, tf.float64)
     tf_std = tf.math.reduce_std(train_set, [0, 1, 2])
     tf_mean = tf.math.reduce_mean(train_set, [0, 1, 2])
@@ -19,33 +20,40 @@ def get_mean_std(train_set):
     tf.print(f"TRAIN STD (TF): {tf_std}")
     return tf_mean, tf_std
 
+
 @tf.function
-def resize_img(img, label):
-    img = tf.image.resize(img, (128, 128))
+def resize_img(img, label, size):
+    """ Resize an image to the give size """
+    
+    img = tf.image.resize(img, size)
     return img, label
 
 
 @tf.function
-def encode_categorical(img, label, n_classes):
-    img, label = resize_img(img, label)
+def prep_inputs_and_labels(img, label, n_classes, size):
+    """ Preprocess our inputs and labels. Resizing and one-hot-encoding. """
+    
+    img, label = resize_img(img, label, size)
     label = tf.one_hot(label, n_classes,  dtype='uint8')
     return img, label
+
 
 @tf.function
 def to_vector(img, label):
     label = tf.expand_dims(label, axis=1)
     return img, label
 
-def prep_ds_input(args, ds, set_len):
+
+def prep_ds_input(args, ds, set_len, size):
+    """ Preprocssing function that maps the relevant preprocessing steps. """
     N_CPUS = multiprocessing.cpu_count()
-    print(f"NBR CPUS: {N_CPUS}")
     if args.transformer:
         #ds = ds.map(lambda elem, label: to_vector(
         #            elem, label), num_parallel_calls=N_CPUS)
         ds = ds.prefetch(tf.data.AUTOTUNE)
     else:
-        ds = ds.map(lambda elem, label: encode_categorical(
-                    elem, label, args.n_classes), num_parallel_calls=N_CPUS)
+        ds = ds.map(lambda elem, label: prep_inputs_and_labels(
+                    elem, label, args.n_classes, size), num_parallel_calls=N_CPUS)
         #ds = ds.shuffle(set_len, seed=args.seed)
         ds = ds.batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
@@ -54,16 +62,17 @@ def prep_ds_input(args, ds, set_len):
 def preprocess_image(tensor_img, mean_arr, std_arr, mode='centering'):
     """Preprocesses a Numpy array encoding a batch of images.
     Args:
-      tensor_img: Input tensor, 3D or 4D.
-
-      mode:
-        - centering: will convert the images from RGB to BGR,
-            then will zero-center each color channel with
-            respect to the training dataset, without scaling.
-        - sample_wise_scaling: will scale pixels between -1 and 1, sample-wise.
-        - scale_std: will scale pixels between 0 and 1 then zero-center
-            by mean and finally normalize each channel with respect to the
-            training dataset.
+        tensor_img: Input tensor, 3D or 4D.
+        mean_arr: Array containing the RGB mean for our dataset.
+        std_arr: Array containing the RGB stdev for our dataset.
+        mode:
+            - centering: will convert the images from RGB to BGR,
+                then will zero-center each color channel with
+                respect to the training dataset, without scaling.
+            - sample_wise_scaling: will scale pixels between -1 and 1, sample-wise.
+            - scale_std: will scale pixels between 0 and 1 then zero-center
+                by mean and finally normalize each channel with respect to the
+                training dataset.
     Returns:
         Preprocessed tensor.
     """

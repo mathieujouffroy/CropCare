@@ -55,24 +55,16 @@ with open("../resources/label_maps/diseases_label_map.json") as f:
 @tf.function
 def resize_img(img, shape):
     img = tf.image.resize(img, shape)
-    #img = tf.image.resize(img, (128, 128))
     return img
-
-#@tf.function
-#def encode_categorical(label, n_classes):
-#    label = tf.one_hot(label, n_classes,  dtype='uint8')
-#    return label
 
 
 def classify_image(input, label, model):
     print(f"model: {model}")
     print(label)
-    #image = cv2.imread("../Img_test_app/Bluenerry_healthy/image (23).JPG")
     input = cv2.cvtColor(input, cv2.COLOR_BGR2RGB)
     input = tf.convert_to_tensor(input)
-    input = tf.expand_dims(input, 0)  # Create batch axis
+    input = tf.expand_dims(input, 0)
     input = tf.cast(input, tf.float32)
-    #input = resize_img(input)
 
     if model == 'EfficientNetV2B3':
         clf =  tf.keras.models.load_model("Best_models/pret_EfficientNetV2B3_dropout/model-best.h5",custom_objects=dependencies)
@@ -94,6 +86,7 @@ def classify_image(input, label, model):
     pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
     pred = pred_label_names[0]
     return pred
+
 
 demo = gr.Interface(
             fn=classify_image, 

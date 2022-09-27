@@ -58,17 +58,15 @@ def evaluate_models(args, model_dict, test_dataset):
                 "nbr_test_batches": args.nbr_test_batch,
             }
             print(MODEL_NAME)
-            #run = wandb.init(project=project_name,
-            #             job_type="infer", name=MODEL_NAME, config=cfg, reinit=True)
-            ##wandb.init() returns a run object, and you can also access the run object via wandb.run:
-            #assert run is wandb.run
+            run = wandb.init(project=project_name,
+                         job_type="infer", name=MODEL_NAME, config=cfg, reinit=True)
+            #wandb.init() returns a run object, and you can also access the run object via wandb.run:
+            assert run is wandb.run
 
         logger.info("\n")
         logger.info(f"  ***** Evaluating {name} Validation set *****")
         compute_training_metrics(args, model, name, test_dataset, m_type='eval_test')
 
-
-        #wandb.sklearn.plot_summary_metrics(model, X_train, y_train, X_test, y_test)
 
         if args.wandb:
             wandb.run.finish()

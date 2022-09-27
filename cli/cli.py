@@ -50,7 +50,6 @@ def get_split_sets(seed, class_type, images, labels):
     return [X_train, X_valid, X_test], label_split_lst
 
 
-
 def dump_training_stats(X_train, label_type, prefix):
     X_train_mean_rgb = np.round(np.mean(X_train, axis=tuple(range(X_train.ndim-1))), 3)
     X_train_std_rgb = np.round(np.std(X_train, axis=tuple(range(X_train.ndim-1))), 3)
@@ -62,6 +61,7 @@ def dump_training_stats(X_train, label_type, prefix):
     print(f"X train std : {X_train_std_rgb}")
     with open(f"{prefix}{label_type}_train_stats_128.json", "w") as outfile:
         json.dump(train_stats, outfile, indent=4)
+
 
 def main():
     if len(sys.argv) == 2:

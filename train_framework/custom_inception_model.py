@@ -6,25 +6,6 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.utils import get_file
 from preprocess_tensor import preprocess_image
 
-# LAB
-# smart resize is enabled.
-# train shape is : (32571, 224, 224, 3)
-# validation shape is : (10858, 224, 224, 3)
-# test shape is : (10876, 224, 224, 3)
-# Channel  0  min: 0.0         max: 1.0
-# Channel  1  min: 0.19593212  max: 0.88375795
-# Channel  2  min: 0.24579802  max: 0.9470912
-#
-# Model               1st & 2nd Layers            3rd Layer
-# baseline                 32                        64
-# 20 % L + 80 % AB        6 — 26                  13 — 51
-# 50 % L + 50 % AB        16 — 16                 32 — 32
-
-WEIGHTS_PATH = (
-    'https://storage.googleapis.com/tensorflow/keras-applications/'
-    'inception_v3/inception_v3_weights_tf_dim_ordering_tf_kernels.h5')
-BASE_WEIGHT_URL = ('https://github.com/fchollet/deep-learning-models/'
-                   'releases/download/v0.7/')
 
 class CopyChannels(tfl.Layer):
     """

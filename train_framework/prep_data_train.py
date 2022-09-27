@@ -186,7 +186,6 @@ def load_split_hdf5(name, split_set):
     images, labels = [], []
     # Open the HDF5 file
     file = h5py.File(f"{name}", "r+")
-    # images are stored as uint8 -> 0-255
 
     if split_set == 'train':
         images = np.array(file["/train_images"]).astype(np.uint8)
@@ -199,39 +198,32 @@ def load_split_hdf5(name, split_set):
         labels = np.array(file["/test_labels"]).astype(np.uint8)
     return images, labels
 
+# swin -> microsoft/swin-tiny-patch4-window7-224
 feature_extractor = ViTFeatureExtractor.from_pretrained(
     "google/vit-base-patch16-224-in21k")
 
-# basic processing (only resizing)
 def process(examples):
+    # basic processing (only resizing)
+    """ Maps the feature extractor to our dataset """
     examples.update(feature_extractor(examples['img'], ))
     return examples
 
 def create_hf_ds(images, labels, class_names):
-    
+    """ Updates our dataset for transormers. """
     features = datasets.Features({
         "img": datasets.Image(),
         # ClassLabel feature type is for single-label multi-class classification
         # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
         "label": datasets.features.ClassLabel(names=class_names)
     })
-
-    print(features['label'])
-    print("building dataset")
     
     ds = datasets.Dataset.from_dict(
         {"img": images, "label": labels}, features=features)
 
-    # TEST : 'facebook/deit-base-patch16-224'
-    # swin -> microsoft/swin-tiny-patch4-window7-224
     data_collator = DefaultDataCollator(return_tensors="tf")
-
     ds = ds.rename_column("label", "labels")
-    print("before mapping")
-    ds = ds.map(process, batched=True)#, writer_batch_size=10)
-    print("before shuffle")
+    ds = ds.map(process, batched=True)
     ds = ds.shuffle(seed=42)
-    print("after mapping")
     tf_dataset = ds.to_tf_dataset(
        columns=['pixel_values'],
        label_cols=["labels"],
@@ -239,4 +231,3 @@ def create_hf_ds(images, labels, class_names):
        batch_size=32,
        collate_fn=data_collator)
     return tf_dataset
-    #return ds
