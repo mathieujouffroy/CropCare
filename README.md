@@ -1,7 +1,8 @@
-<!--
+
 # PopYourCrop
 Crop Disease Detection
 
+<!--
 ## CLI
 Command Line Interface used to generate the dataset.
 <br>
