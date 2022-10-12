@@ -4,11 +4,12 @@ __pycache__/
 /**/__pycache__
 
 resources/experiments/*
-resources/datasets/*
+resources/datasets/cnn/*
+resources/datasets/transformers/*
 resources/wandb/*
-resources/test_imgs
-resources/best_models
-resources/transformers_ds
+resources/test_imgs/*
+resources/best_models/cnn/*
+resources/best_models/transformers/*
 
 .DS_Store
 .env

@@ -3,9 +3,7 @@ import datasets
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from transformers import ViTFeatureExtractor
-from transformers import DefaultDataCollator
-from train_framework.utils import *
+from train_framework.utils import bcolors, logging
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ batch_size: 32
 wandb: False
 
 
-models: ['EfficientNetV2B3']
+models: ['pret_EfficientNetV2B3']
 #, 'InceptionResNetV2', 'DenseNet201', 'ResNet50V2', 'pret_ResNet50V2', 'pret_DenseNet201', 'pret_EfficientNetV2B3']
 
 class_type: 'disease'
@@ -19,14 +19,11 @@ class_type: 'disease'
 transformer: False
 
 # the path to the directory of the dataset
-dataset: '../resources/small_test/augm_disease_380_ds_128.h5'
+dataset: 'resources/datasets/cnn/test_augm_disease_380_ds_128.h5'
+#augm_disease_60343_ds_128.h5
 
 # the path to the root directory used to store experiments
-#xp_dir: '../wandb/Models'
-xp_dir: 'wandb'
+xp_dir: 'resources/best_models/cnn'
+#xp_dir: 'resources/best_models/transformers'
 
 output_dir: 'inference/best_models'
-# the name of log directory for an experiment (result of training)
-# you can set to 'last' to refer to the lastly created directory under in <xp_rootdir>
-#xp_name:
-##parser.add_argument("--eval_all_checkpoints", action="store_true", help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")

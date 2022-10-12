@@ -32,8 +32,8 @@ polyloss: False
 # option to compute advanced metrics while training multiple models
 eval_during_training: False
 
-models: ["pret_EfficientNetV2B3"]
-#, "InceptionResNetV2", "ResNet50V2","InceptionV3","DenseNet201", "EfficientNetV2B3", "pret_ResNet50V2","pret_DenseNet201","pret_EfficientNetV2B3"]
+models: ["pret_EfficientNetV2B3", "InceptionResNetV2"]
+#, "ResNet50V2","InceptionV3","DenseNet201", "EfficientNetV2B3", "pret_ResNet50V2","pret_DenseNet201","pret_EfficientNetV2B3"]
 #"LAB_2path_InceptionV3", "LAB_2path_InceptionResNetV2",
 
 
@@ -50,8 +50,8 @@ overwrite_output_dir: True
 transformer: False
 
 # the path to the directory of the dataset
-dataset: '../resources/datasets/augmentation/augm_disease_60343_ds_128.h5'
-fe_dataset: '../resources/datasets/transformers_ds_224/vit'
+dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
+fe_dataset: 'resources/datasets/transformers_ds_224/vit'
 
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/comp-top-k'  # -> all augmented

@@ -34,7 +34,7 @@ class YamlNamespace(argparse.Namespace):
 
 
 def set_logging(args, type="train"):
-    "Defines the file in which we will write or training logs"
+    "Defines the file in which we will write our training logs"
 
     date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
     if type == 'train':

@@ -3,19 +3,53 @@ import tensorflow as tf
 import tensorflow.keras.layers as tfl
 from collections import OrderedDict
 from tensorflow import keras
-from tensorflow.keras.applications import (VGG16, DenseNet201,
-                                           EfficientNetB3, EfficientNetV2B3,
-                                           EfficientNetV2M, EfficientNetV2S,
-                                           InceptionResNetV2, InceptionV3,
-                                           ResNet50, ResNet50V2, DenseNet201) #,ConvNeXtSmall
-from tensorflow.keras.initializers import glorot_uniform, random_uniform
 from tensorflow.keras.regularizers import L2
-from transformers import (TFConvNextForImageClassification, TFConvNextModel,
-                          TFSwinForImageClassification, TFSwinModel,
-                          TFViTForImageClassification, TFViTModel)
+from tensorflow.keras.initializers import glorot_uniform, random_uniform
+from tensorflow.keras.applications import (
+		VGG16, DenseNet201, ConvNeXtBase, ConvNeXtSmall, EfficientNetB3, EfficientNetV2B3,
+		EfficientNetV2M, EfficientNetV2S, InceptionResNetV2, InceptionV3, ResNet50, ResNet50V2, DenseNet201
+	)
+from transformers import (
+		TFConvNextForImageClassification, TFConvNextModel, TFSwinForImageClassification, TFSwinModel,
+    	TFViTForImageClassification, TFViTModel
+	)
 from train_framework.custom_inception_model import *
 from train_framework.preprocess_tensor import preprocess_image
 
+class LayerScale(tf.keras.layers.Layer):
+    """Layer scale module.
+    References:
+      - https://arxiv.org/abs/2103.17239
+    Args:
+      init_values (float): Initial value for layer scale. Should be within
+        [0, 1].
+      projection_dim (int): Projection dimensionality.
+    Returns:
+      Tensor multiplied to the scale.
+    """
+
+    def __init__(self, init_values, projection_dim, **kwargs):
+        super().__init__(**kwargs)
+        self.init_values = init_values
+        self.projection_dim = projection_dim
+
+    def build(self, input_shape):
+        self.gamma = tf.Variable(
+            self.init_values * tf.ones((self.projection_dim,))
+        )
+
+    def call(self, x):
+        return x * self.gamma
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(
+            {
+                "init_values": self.init_values,
+                "projection_dim": self.projection_dim,
+            }
+        )
+        return config
 
 def simple_conv_model(args, input_shape, n_classes, mode):
     """
@@ -404,8 +438,7 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
     else:
         inputs = tfl.Input(shape=input_shape)
         x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
-        #x = tfl.Lambda(preprocess_image, arguments={'mean_arr':args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(inputs)
-
+        
         base_model = model(input_tensor=x,
                            include_top=False, weights=weights)
 
@@ -437,7 +470,7 @@ def get_models(args, n_classes, we=None):
     """
 
     input_shape = args.input_shape
-    with open('../models_to_eval.json') as f:
+    with open('../resources/models_to_eval.json') as f:
         model_d = json.load(f)
     to_test = args.models
     d_subset = {key: model_d[key] for key in to_test}
