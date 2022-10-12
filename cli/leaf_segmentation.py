@@ -78,6 +78,7 @@ def distance_transform_fb(rgb_img, hsv_mask, fill_sbg=True, verbose=False):
 def color_mask(rgb_img, ls1, ls2, type=1, verbose=False):
     """
     HSV Color mask applied on the rgb image.
+
     Args:
         rgb_img (numpy.array):     RGB image
         ls1 (int):                 lower saturation on yellow-green-blue
@@ -238,7 +239,7 @@ def segment_split_set(img_arr, p_option, dist=False):
     for img in img_arr:
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_noback = remove_background(
-            rgb_img, p_type=int(p_option), dist=dist)  # , verbose=True)
+            rgb_img, p_type=int(p_option), dist=dist)#, verbose=True)
         seg_imgs.append(img_noback)
     seg_imgs = np.array(seg_imgs)
     return seg_imgs

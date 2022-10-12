@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
 from PIL import Image
-#from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
+from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
 
 RANDOM_SEED = 42
 
@@ -23,11 +23,15 @@ def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
     Stores an array of images to HDF5.
 
     Args:
-    images(numpy.array):    images array, (N, 256, 256, 3) to be stored
-    healthy(numpy.array):   healthy/sick (labels) array, (N, 1) to be stored
-    plant(numpy.array):     plant (labels) array, (N, 1) to be stored
-    disease(numpy.array):   disease (labels) array, (N, 1) to be stored
-    gen_disease(numpy.array): general disease (labels) array, (N, 1) to be stored
+		name(str):				filename 
+    	train_x(numpy.array):   training images array
+    	valid_x(numpy.array): 	validation images array
+    	test_x(numpy.array):  	testing images array
+    	train_y(numpy.array): 	training labels array
+		valid_y(numpy.array): 	validation labels array
+		test_y(numpy.array): 	testing labels array
+	Returns:
+		file(h5py.File): file containing 
     """
 
     # Create a new HDF5 file
@@ -35,8 +39,7 @@ def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
     print(f"Train Images:     {np.shape(train_x)}  -- dtype: {train_x.dtype}")
     print(f"Train Labels:    {np.shape(train_y)} -- dtype: {train_y.dtype}")
 
-    # Create an image dataset in the file
-    # store as uint8 -> 0-255
+    # Images are store as uint8 -> 0-255
     file.create_dataset("train_images", np.shape(train_x),
                         h5py.h5t.STD_U8BE, data=train_x)
     file.create_dataset("valid_images", np.shape(valid_x),
@@ -87,7 +90,7 @@ def load_hdf5(name, class_label, label_only=False):
 
 class PlantDataset():
     """
-    Class to represents the PlantVillage dataset with useful metadata and
+    Class to represents our plant dataset with useful metadata and
     statistics.
 
     Attributes:
@@ -105,12 +108,10 @@ class PlantDataset():
         self.verbose = verbose
 
 
-    def load_data(self, seed=42, dtype='float32', balanced=False,):
+    def load_data(self, seed=42, dtype='float32'):
         """
         Stores an array of images to HDF5.
 
-        Args:
-            balanced (boolean): option to balance the classes of our dataset
         Returns:
             plant_df (pandas.DataFrame): recapitulatory dataframe of our dataset
         """
@@ -146,14 +147,13 @@ class PlantDataset():
                 plant_state = f"{plant_specie}_{disease}"
                 # class: healthy - binary
                 healthy = state_img["healthy"]
+                
                 img_folder_name = f"{self.basefolder}/{folder}"
                 if self.verbose:
                     print('Loading '+img_folder_name)
                 img_list = os.listdir(img_folder_name)
                 img_list = [i for i in img_list if not i.startswith(".DS")]
-				
                 random.shuffle(img_list)
-
                 p_img_lst = []
                 for img_file in img_list:
                     if not img_file.endswith(".JPG"):
@@ -161,6 +161,7 @@ class PlantDataset():
                     absolute_file_name = img_folder_name+'/'+img_file
                     image = cv2.imread(absolute_file_name)
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+					#image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
                     if (image.shape != self.img_shape):
                         if (image.shape[-1] != self.img_shape[-1]):
                             print(
@@ -180,13 +181,6 @@ class PlantDataset():
                 state_img['image_path'] = img_folder_name
                 new = pd.DataFrame.from_dict([state_img])
                 total_pic += len(p_img_lst)
-                if balanced == True:
-                    if len(p_img_lst) > self.max_samples_per_class:
-                        print("Reduce this class")
-                        new = new.sample(
-                            self.max_samples_per_class, random_state=RANDOM_SEED)
-                        new.reset_index(drop=True, inplace=True)
-                        state_img['label_count'] = self.max_samples_per_class
                 df_lst.append(new)
 
         plant_df = pd.concat(df_lst)
@@ -213,6 +207,8 @@ class PlantDataset():
         for x in images_lst:
             if x.dtype != 'uint8':
                 print(x.dtype)
+        #print(images_lst)
+        #images_arr = np.array(images_lst)#, dtype=np.uint8)
         images_arr = np.array(images_lst, dtype=object)
         healthy_arr = np.array(healthy_lst).astype(int).astype(bool)
 
@@ -246,7 +242,9 @@ class PlantDataset():
         self.general_diseases = general_disease_arr
         return plant_df
 
+
     def get_relevant_images_labels(self, label_type):
+        """" Returns the corresponding labels given the label_type. """
         if label_type == 'plant':
             label = self.plants
         elif label_type == 'disease':
@@ -256,6 +254,7 @@ class PlantDataset():
         elif label_type == 'healthy':
             label = self.healthy
         return self.images, label
+
 
     def dataset_distribution(self, plant_df):
         """
@@ -362,44 +361,35 @@ def resize_images(img_arr, img_size):
 #feature_extractor = ViTFeatureExtractor.from_pretrained(
 #    "google/vit-base-patch16-224")
 
-# basic processing (only resizing)
 def process(examples, feature_extractor):
+    """" Maps the feature_extractor to our image array """
     examples.update(feature_extractor(examples['img'], ))
     return examples
 
 
 def create_hf_ds(images, labels, feature_extractor, class_names):
+    """" Creates a dataset with transformer feature exctractor """
     features = datasets.Features({
         "img": datasets.Image(),
         # ClassLabel feature type is for single-label multi-class classification
         # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
         "label": datasets.features.ClassLabel(names=class_names)
     })
+    
     print(features)
-    print("buildind dataset")
     ds = datasets.Dataset.from_dict(
         {"img": images, "label": labels}, features=features)
 
-    # TEST : 'facebook/deit-base-patch16-224'
-    # swin -> microsoft/swin-tiny-patch4-window7-224
-    #data_collator = DefaultDataCollator(return_tensors="tf")
-
     ds = ds.rename_column("label", "labels")
-    print("before mapping")
     ds = ds.map(lambda x: process(x, feature_extractor), batched=True)#, writer_batch_size=10)
-    print("before shuffle")
     ds = ds.shuffle(seed=42)
-    print("after mapping")
-    #tf_dataset = ds.to_tf_dataset(
-    #   columns=['pixel_values'],
-    #   label_cols=["labels"],
-    #   shuffle=True,
-    #   batch_size=32,
-    #   collate_fn=data_collator)
-    #return tf_dataset
     return ds
 
 def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test):
+    """ 
+    Creates a training, validation and test set dataset (given the label type) with the appropriate feature
+    extractor applied for each of the ViT, Swin and ConvNexT models.
+    """
     if label_type !=  'healthy':
         if label_type == 'disease':
             label_map_path = '../resources/label_maps/diseases_label_map.json'
@@ -412,7 +402,7 @@ def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid
         class_names = [str(v) for k,v in id2label.items()]
     else:
         class_names = ['healthy', 'not_healthy']
-    print(f"  Class names = {class_names}")
+
     fe_dict = {
         'vit': ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224"),
         'swin': AutoFeatureExtractor.from_pretrained("microsoft/swin-tiny-patch4-window7-224"),

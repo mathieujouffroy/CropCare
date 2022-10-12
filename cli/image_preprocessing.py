@@ -9,6 +9,7 @@ def adaptive_thresh_and_canny(image_gray):
     """
     Uses a blurring function, adaptive thresholding and dilation to expose
     the main features of an image.
+
     Args:
         image_gray (numpy.ndarray):    grayscale image to process
     """
@@ -51,6 +52,7 @@ def morph_transform(image_gray):
     Applies morphological transformations to a gray_scale image. These
     operations “probe” an image with a structuring element which defines the
     neighborhood to be examined around each pixel.
+
     Args:
         image_gray (numpy.ndarray):    grayscale image to process
     """
@@ -72,6 +74,7 @@ def morph_transform(image_gray):
 def automatic_brightness_and_contrast(rgb_img, clip_hist_percent=2, verbose=False):
     """
     Automatic brightness and contrast optimization with histogram clipping.
+
     Args:
         rgb_img (numpy.ndarray):    RGB image to adjust
         clip_hist_percent (int):    specify the histogram percentile to clip at
@@ -121,6 +124,7 @@ def automatic_brightness_and_contrast(rgb_img, clip_hist_percent=2, verbose=Fals
 def adjust_lightness(rgb_img, verbose=False):
     """
     Adjust the lightness of an RGB image.
+
     Args:
         rgb_img (numpy.ndarray):    RGB image to adjust
         verbose (bool):             option to display the images
@@ -151,6 +155,7 @@ def adjust_contrast(rgb_img, verbose=False):
     """
     Adjust the contrast of an RGB image using the Contrast Limited Adaptive
     Histogram Equalization (CLAHE) method.
+
     Args:
         rgb_img (numpy.ndarray):    RGB image to adjust
         verbose (bool):             option to display images
@@ -175,7 +180,8 @@ def adjust_contrast(rgb_img, verbose=False):
 
 def remove_whites(image, mask):
     """
-    Remove pixels resembling white from mask as background
+    Remove pixels resembling white from mask as background.
+
     Args:
         image: RGB image
         mask:  mask to be cleaned
@@ -195,6 +201,7 @@ def remove_whites(image, mask):
 def fill_object(rgb_img, final_mask):
     """
     Fills the object in the mask with white pixels.
+
     Parameters:
         rgb_img (numpy.ndarray):    RGB image to process
         final_mask (numpy.ndarray): mask to extract the object to fill
@@ -218,6 +225,7 @@ def fill_object(rgb_img, final_mask):
 def color_cast_removal(rgb_img, verbose=False):
     """
     Removes unwanted tint of colors.
+	
     Args:
         rgb_img (numpy.ndarray):    RGB image to process
         verbose (bool):             option to display images
