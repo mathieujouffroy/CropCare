@@ -3,11 +3,12 @@ __pycache__/
 /*/*/__pycache__
 /**/__pycache__
 
-resources/experiments
-resources/datasets
-resources/wandb
-resources/small_test
-resources/*
+resources/experiments/*
+resources/datasets/*
+resources/wandb/*
+resources/test_imgs
+resources/best_models
+resources/transformers_ds
 
 .DS_Store
 .env

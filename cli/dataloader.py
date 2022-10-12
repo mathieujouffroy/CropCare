@@ -23,15 +23,15 @@ def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
     Stores an array of images to HDF5.
 
     Args:
-		name(str):				filename 
-    	train_x(numpy.array):   training images array
-    	valid_x(numpy.array): 	validation images array
-    	test_x(numpy.array):  	testing images array
-    	train_y(numpy.array): 	training labels array
-		valid_y(numpy.array): 	validation labels array
-		test_y(numpy.array): 	testing labels array
-	Returns:
-		file(h5py.File): file containing 
+        name(str):				filename 
+        train_x(numpy.array):   training images array
+        valid_x(numpy.array): 	validation images array
+        test_x(numpy.array):  	testing images array
+        train_y(numpy.array): 	training labels array
+        valid_y(numpy.array): 	validation labels array
+        test_y(numpy.array): 	testing labels array
+    Returns:
+        file(h5py.File): file containing 
     """
 
     # Create a new HDF5 file
@@ -93,6 +93,9 @@ class PlantDataset():
     Class to represents our plant dataset with useful metadata and
     statistics.
 
+    In the basefolder, the seperate folders containing the images must
+    have the format {plant}___{plant_disease}.
+
     Attributes:
         basefolder (bytes): path to the directory containing our images
         shape (tuple): expected shape of our images
@@ -100,7 +103,6 @@ class PlantDataset():
         verbose (bool): option to display debugging messages
     """
 
-    #def __init__(self, basefolder, shape=(224, 224, 3), max_samples_per_class=1000, verbose=False):
     def __init__(self, basefolder, shape=(256, 256, 3), max_samples_per_class=1000, verbose=False):
         self.basefolder = basefolder
         self.img_shape = shape
@@ -122,10 +124,12 @@ class PlantDataset():
         total_pic = 0
         classes_folder = os.listdir(f"{self.basefolder}/")
         classes_folder.sort()
+
         if self.verbose:
             print(classes_folder)
         if seed is not None:
             random.seed(seed)
+            
         if 'Background_without_leaves' in classes_folder:
             classes_folder.remove('Background_without_leaves')
 
@@ -133,10 +137,12 @@ class PlantDataset():
             class_img_paths = glob.glob(
                 os.path.join(self.basefolder, folder, '*'))
             random.shuffle(class_img_paths)
+            
             split_file = folder.split('___')
             plant_specie = split_file[0].lower()
             if ',' in plant_specie:
                 plant_specie = plant_specie.replace(',', '')
+            
             if (len(split_file) > 1):
                 disease = split_file[1].lower()
                 state_img = dict()
@@ -145,7 +151,7 @@ class PlantDataset():
                 else:
                     state_img["healthy"] = 0
                 plant_state = f"{plant_specie}_{disease}"
-                # class: healthy - binary
+                # class: healthy -> binary
                 healthy = state_img["healthy"]
                 
                 img_folder_name = f"{self.basefolder}/{folder}"
@@ -156,12 +162,10 @@ class PlantDataset():
                 random.shuffle(img_list)
                 p_img_lst = []
                 for img_file in img_list:
-                    if not img_file.endswith(".JPG"):
-                        print(img_file)
                     absolute_file_name = img_folder_name+'/'+img_file
+                    print(f"filename : {absolute_file_name}")
                     image = cv2.imread(absolute_file_name)
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-					#image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #(image, cv2.COLOR_BGR2LAB)
                     if (image.shape != self.img_shape):
                         if (image.shape[-1] != self.img_shape[-1]):
                             print(
@@ -206,10 +210,9 @@ class PlantDataset():
 
         for x in images_lst:
             if x.dtype != 'uint8':
-                print(x.dtype)
-        #print(images_lst)
-        #images_arr = np.array(images_lst)#, dtype=np.uint8)
-        images_arr = np.array(images_lst, dtype=object)
+                print(f"image is {x.dtype}")
+
+        images_arr = np.array(images_lst, dtype=np.uint8)
         healthy_arr = np.array(healthy_lst).astype(int).astype(bool)
 
         plants_d = {i: np.unique(plant_lst)[i]
@@ -304,6 +307,8 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{col} distribution across dataset", showlegend=False)
             this_figure.show()
+            this_figure.write_image("../resources/data_meta/ds_labels_distrib.jpeg")
+
 
     def plant_overview(self, plant_df):
         """
@@ -347,6 +352,7 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{elem} class distribution", showlegend=False)
             this_figure.show()
+            this_figure.write_image(f"../resources/data_meta/ds_{elem}_distrib.jpeg")
 
 
 def resize_images(img_arr, img_size):
@@ -356,10 +362,6 @@ def resize_images(img_arr, img_size):
         resized_arr.append(new_img)
     resized_arr = np.array(resized_arr)
     return resized_arr
-
-
-#feature_extractor = ViTFeatureExtractor.from_pretrained(
-#    "google/vit-base-patch16-224")
 
 def process(examples, feature_extractor):
     """" Maps the feature_extractor to our image array """

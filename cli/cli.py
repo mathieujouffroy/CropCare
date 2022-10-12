@@ -66,38 +66,34 @@ def dump_training_stats(X_train, label_type, prefix):
 def main():
     if len(sys.argv) == 2:
         quit_lst = ['q', 'quit']
-        yes = ['y', 'yes']
-        no = ['n', 'no']
         plant_data = PlantDataset(sys.argv[1], verbose=True)
         plant_df = plant_data.load_data()
         print(
             f"\n\n{bcolors.OKGREEN}==================  POP FARM : Plant Phenotyping  =================={bcolors.ENDC}")
         print(f"{bcolors.FAIL}{strawb}{bcolors.ENDC}\n\n")
+
+        print(
+            f"{bcolors.UNDERLINE}type q or quit to exit the program{bcolors.ENDC}\n")
+        label_type = input(f'Enter the label type: plant, disease, healthy, gen_disease\n').lower()
+        assert label_type in ['plant', 'disease', 'healthy', 'gen_disease']
+        images, labels = plant_data.get_relevant_images_labels(label_type)
+        noseg_images = resize_images(images, (128, 128))
+        X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
+        X_train, X_valid, X_test = X_splits
+        y_train, y_valid, y_test = y_splits
+        # Get stats from training set for data preprocessing
+        #dump_training_stats(X_train, label_type, prefix='augm_')
+        store_hdf5(f"../resources/datasets/augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+        # CREATE TRANSFORMER DATASET
+        create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
         try:
             while not False:
-                print(
-                    f"{bcolors.UNDERLINE}type q or quit to exit the program{bcolors.ENDC}\n")
 
-                label_type = input(f'Enter the label type: plant, disease, healthy, gen_disease\n').lower()
-                assert label_type in ['plant', 'disease', 'healthy', 'gen_disease']
-                images, labels = plant_data.get_relevant_images_labels(label_type)
+                options = input(f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
 
-                noseg_images = resize_images(images, (128, 128))
-                X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
-                X_train, X_valid, X_test = X_splits
-                y_train, y_valid, y_test = y_splits
-                # Get stats from training set for data preprocessing
-                dump_training_stats(X_train, label_type, prefix='augm_')
-
-                store_hdf5(f"augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
-                
-                # CREATE TRANSFORMER DATASET
-                #print(f"label type: {label_type}")
-                #create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
-
-                
-
-                options = input(f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Extract Features for ML Classification\n{bcolors.OKBLUE}[4]{bcolors.ENDC} -- Preprocess for CNN\n{bcolors.OKBLUE}[5]{bcolors.ENDC} -- Plant Health Classification{bcolors.OKBLUE}\n[6]{bcolors.ENDC} -- Plant Classification{bcolors.OKBLUE}\n[7]{bcolors.ENDC} -- Plant Disease Classification\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
+                if options.lower() in quit_lst:
+                    print("Bye !")
+                    break
 
                 if options == '0':
                     print('Dataset Distribution')
@@ -108,8 +104,8 @@ def main():
                 if options == '1':
                     print('Leag Segmentation HSV mask')
                     p_option = input(
-                        f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Lightness\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
-                    if p_option in ['0', '1', '2', '3']:
+                        f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
+                    if p_option in ['0', '1', '2']:
                         train_seg = segment_split_set(X_train, p_option)
                         val_seg = segment_split_set(X_valid, p_option)
                         test_seg = segment_split_set(X_test, p_option)
@@ -120,7 +116,7 @@ def main():
                 if options == '2':
                     print('Leag Segmentation HSV mask + dist transform')
                     p_option = input(
-                        f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Lightness\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[3]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
+                        f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
                     if p_option in ['0', '1', '2', '3']:
                         train_seg = segment_split_set(X_train, p_option, dist=True)
                         val_seg = segment_split_set(X_valid, p_option, dist=True)
@@ -130,19 +126,16 @@ def main():
                         continue
 
                 if options in ['1', '2']:
-                    dataset_name = f"segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
+                    dataset_name = f"../resources/datasets/segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
                     X_train, X_valid, X_test = X_splits
                     y_train, y_valid, y_test = y_splits
                     X_train_seg = resize_images(train_seg, (128, 128))
                     X_val_seg = resize_images(val_seg, (128, 128))
                     X_test_seg = resize_images(test_seg, (128, 128))
                     # Get stats from training set for data preprocessing
-                    dump_training_stats(X_train_seg, label_type, prefix='segm_')
+                    #dump_training_stats(X_train_seg, label_type, prefix='segm_')
                     store_hdf5(dataset_name,  X_train_seg, X_val_seg, X_test_seg, y_train, y_valid, y_test)
 
-                if options.lower() in quit_lst:
-                    print("Bye !")
-                    break
         except EOFError:  # for ctrl + c
           print("\nBye !")
           quit = True

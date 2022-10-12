@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 def poly_loss(labels, logits):
+    """ Poly cross entropy loss. """
     # epsilon >=-1. =1 for first try
     # pt, CE, and Poly1 have shape [batch].
     labels = tf.cast(labels, logits.dtype)
@@ -11,7 +12,7 @@ def poly_loss(labels, logits):
     return Poly1
 
 def poly1_cross_entropy_label_smooth(logits, labels, epsilon):
-    """ Alpha label smoothing """
+    """ Poly cross entropy loss with alpha label smoothing """
     # epsilon >=-1.
     # one minus pt, CE, and Poly1 have shape [batch].
     alpha = 0.1
@@ -24,15 +25,3 @@ def poly1_cross_entropy_label_smooth(logits, labels, epsilon):
     CE = CE_loss(labels, logits)
     Poly1 = CE + epsilon * one_minus_pt
     return Poly1
-
-def poly1_focal_loss(logits, labels, epsilon, gamma=2.0, alpha=0.25):
-    """ Here alpha is balanced, here use of sigmoid activation """
-    # epsilon >=-1.
-    # p, pt, FL, weight, and Poly1 have shape [batch, num of classes].
-    p = tf.math.sigmoid(logits)
-    pt = labels * p + (1 - labels) * (1 - p)
-    FL = focal_loss(pt, gamma, alpha)
-    weight = labels * alpha + (1 - labels) * (1 - alpha)
-    Poly1 = FL + epsilon * tf.math.pow(1 - pt, gamma + 1) * weight
-    return Poly1
-
