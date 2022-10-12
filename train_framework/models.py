@@ -1,26 +1,20 @@
 import json
-from collections import OrderedDict
-from importlib import import_module
-from os import pread
-
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
+from collections import OrderedDict
 from tensorflow import keras
-#from tensorflow.keras.applications import (VGG16, ConvNeXtSmall, DenseNet201,
 from tensorflow.keras.applications import (VGG16, DenseNet201,
                                            EfficientNetB3, EfficientNetV2B3,
                                            EfficientNetV2M, EfficientNetV2S,
                                            InceptionResNetV2, InceptionV3,
-                                           ResNet50, ResNet50V2, Xception)
+                                           ResNet50, ResNet50V2, DenseNet201) #,ConvNeXtSmall
 from tensorflow.keras.initializers import glorot_uniform, random_uniform
 from tensorflow.keras.regularizers import L2
-from tensorflow.keras.utils import get_file
 from transformers import (TFConvNextForImageClassification, TFConvNextModel,
                           TFSwinForImageClassification, TFSwinModel,
                           TFViTForImageClassification, TFViTModel)
-
-from custom_inception_model import *
-from preprocess_tensor import preprocess_image
+from train_framework.custom_inception_model import *
+from train_framework.preprocess_tensor import preprocess_image
 
 
 def simple_conv_model(args, input_shape, n_classes, mode):

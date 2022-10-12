@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
+import multiprocessing
 import matplotlib.pyplot as plt
 from keras import backend as K
-import multiprocessing
-import gc
+
 
 @tf.function
 def get_mean_std(train_set):

@@ -1,13 +1,11 @@
 import h5py
+import datasets
 import numpy as np
-import json
-import gc
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-import datasets
 from transformers import ViTFeatureExtractor
 from transformers import DefaultDataCollator
-from utils import *
+from train_framework.utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -197,37 +195,3 @@ def load_split_hdf5(name, split_set):
         images = np.array(file["/test_images"]).astype(np.uint8)
         labels = np.array(file["/test_labels"]).astype(np.uint8)
     return images, labels
-
-# swin -> microsoft/swin-tiny-patch4-window7-224
-feature_extractor = ViTFeatureExtractor.from_pretrained(
-    "google/vit-base-patch16-224-in21k")
-
-def process(examples):
-    # basic processing (only resizing)
-    """ Maps the feature extractor to our dataset """
-    examples.update(feature_extractor(examples['img'], ))
-    return examples
-
-def create_hf_ds(images, labels, class_names):
-    """ Updates our dataset for transormers. """
-    features = datasets.Features({
-        "img": datasets.Image(),
-        # ClassLabel feature type is for single-label multi-class classification
-        # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
-        "label": datasets.features.ClassLabel(names=class_names)
-    })
-    
-    ds = datasets.Dataset.from_dict(
-        {"img": images, "label": labels}, features=features)
-
-    data_collator = DefaultDataCollator(return_tensors="tf")
-    ds = ds.rename_column("label", "labels")
-    ds = ds.map(process, batched=True)
-    ds = ds.shuffle(seed=42)
-    tf_dataset = ds.to_tf_dataset(
-       columns=['pixel_values'],
-       label_cols=["labels"],
-       shuffle=True,
-       batch_size=32,
-       collate_fn=data_collator)
-    return tf_dataset

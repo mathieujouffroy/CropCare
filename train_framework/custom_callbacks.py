@@ -3,7 +3,6 @@ import numpy as np
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
 from tensorflow.keras.callbacks import Callback
-import numpy as np
 
 
 class RocAUCScore(Callback):

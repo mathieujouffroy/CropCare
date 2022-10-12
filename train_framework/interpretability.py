@@ -2,11 +2,9 @@ import wandb
 import random
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from IPython.display import Image, display
-from preprocess_tensor import preprocess_image
+from train_framework.preprocess_tensor import preprocess_image
 
 
 def get_target_layer(model):
@@ -115,12 +113,12 @@ def save_and_display_gradcam(args, model, m_name, mode, x_test, n_img, model_met
         jet_colors = jet(np.arange(256))[:, :3]
         jet_heatmap = jet_colors[heatmap]
         # Create an image with RGB colorized heatmap
-        jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
+        jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
         jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
-        jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
+        jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
         # Superimpose the heatmap on original image
         superimposed_img = jet_heatmap * alpha + img
-        superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
+        superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
 
         # Save the superimposed image
         superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")

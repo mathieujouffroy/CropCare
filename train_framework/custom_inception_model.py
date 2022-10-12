@@ -1,11 +1,6 @@
-
 import tensorflow as tf
-import tensorflow.keras as keras
 import tensorflow.keras.layers as tfl
 import tensorflow.keras.backend as K
-from tensorflow.keras.utils import get_file
-from preprocess_tensor import preprocess_image
-
 
 class CopyChannels(tfl.Layer):
     """
@@ -224,7 +219,7 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
 
     inputs = img_input
     # Create model.
-    model = keras.models.Model(inputs, x, name=model_name)
+    model = tf.keras.models.Model(inputs, x, name=model_name)
 
     # Load weights.
     if weights is not None:
@@ -481,7 +476,7 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
 
     inputs = img_input
     # Create model.
-    model = keras.models.Model(inputs, x, name=model_name)
+    model = tf.keras.models.Model(inputs, x, name=model_name)
 
     # Load weights.
     if weights is not None:
