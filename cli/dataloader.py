@@ -222,8 +222,8 @@ class PlantDataset():
         general_diseases_d = {i: np.unique(general_disease_lst)[i]
                               for i in range(len(np.unique(general_disease_lst)))}
 
-        #labels_dict = {"plants": plants_d, "diseases": diseases_d,
-        #               "general_diseases": general_diseases_d}
+        labels_dict = {"plants": plants_d, "diseases": diseases_d,
+                       "general_diseases": general_diseases_d}
         #for name, elem in labels_dict.items():
         #    with open(f'../resources/{name}_label_map.json', 'w') as f:
         #        json.dump(elem, f, indent=4)

@@ -51,7 +51,7 @@ class LayerScale(tf.keras.layers.Layer):
         )
         return config
 
-def simple_conv_model(args, input_shape, n_classes, mode):
+def simple_conv_model(args, mode):
     """
     Implements the forward propagation for the model:
     CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> DENSE
@@ -63,7 +63,7 @@ def simple_conv_model(args, input_shape, n_classes, mode):
     model -- TF Keras model (object containing the information for the entire training process)
     """
 
-    input_img = tf.keras.Input(shape=input_shape)
+    input_img = tf.keras.Input(shape=args.input_shape)
 
     prep = tfl.Lambda(preprocess_image, arguments={
                   'mean_arr': args.mean_arr, 'std_arr': args.std_arr, 'mode': mode})(input_img)
@@ -83,13 +83,13 @@ def simple_conv_model(args, input_shape, n_classes, mode):
     F = tfl.Flatten()(P2)
 
     outputs = tfl.Dense(
-        units=n_classes, activation='softmax', name='predictions')(F)
+        units=args.n_classes, activation='softmax', name='predictions')(F)
     model = tf.keras.Model(inputs=input_img, outputs=outputs)
     return model
 
 
 
-def convolutional_model(args, input_shape, n_classes, mode=None, l2_decay=0.0, drop_rate=0, has_batch_norm=True):
+def convolutional_model(args, mode=None, l2_decay=0.0, drop_rate=0, has_batch_norm=True):
     """
     Nine-layer deep convolutional neural network. With 2 dense layer (11 total)
 
@@ -100,7 +100,7 @@ def convolutional_model(args, input_shape, n_classes, mode=None, l2_decay=0.0, d
     model -- TF Keras model (object containing the information for the entire training process)
     """
 
-    input_img = tf.keras.Input(shape=input_shape)
+    input_img = tf.keras.Input(shape=args.input_shape)
 
     prep = tfl.Lambda(preprocess_image, arguments={'mean_arr': args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(input_img)
 
@@ -135,13 +135,13 @@ def convolutional_model(args, input_shape, n_classes, mode=None, l2_decay=0.0, d
     A4 = tfl.ReLU()(Z4)
 
     outputs = tfl.Dense(
-        units=n_classes, activation='softmax', name='predictions')(A4)
+        units=args.n_classes, activation='softmax', name='predictions')(A4)
     model = tf.keras.Model(inputs=input_img, outputs=outputs)
     return model
 
 
-def alexnet_model(input_shape, n_classes, l2_decay=0.0, drop_rate=0.5):
-    input_img = tf.keras.Input(shape=input_shape)
+def alexnet_model(args, l2_decay=0.0, drop_rate=0.5):
+    input_img = tf.keras.Input(shape=args.input_shape)
 
     # Layer 1
     Z1 = tfl.Conv2D(filters=96, kernel_size=(11, 11), padding='same',
@@ -196,7 +196,7 @@ def alexnet_model(input_shape, n_classes, l2_decay=0.0, drop_rate=0.5):
     Z8 = tfl.Dense(units=4096)(A7)
     Z8 = tfl.BatchNormalization()(Z8)
 
-    outputs = tfl.Softmax(units=n_classes, name='predictions')(Z8)
+    outputs = tfl.Softmax(units=args.n_classes, name='predictions')(Z8)
     model = tf.keras.Model(inputs=input_img, outputs=outputs)
     return model
 
@@ -364,48 +364,55 @@ def Resnet50_model(input_shape, n_classes, include_top=True, weights=None):
     return model
 
 
-def set_model(model, mode):
+def set_model(args, model, mode, n_classes):
     """ Set out models with their appropriate preprocessing functions. """
-    if model == 'VGG16':
+    
+    if model == "simple_std":
+        mode = 'sample_wise_scaling'
+        model = simple_conv_model(args, mode)
+    elif model ==  "baseline_samplewise":
+        mode = 'scale_std'
+        model = convolutional_model(args, mode)
+    elif model == 'VGG16':
         model = VGG16
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.vgg16.preprocess_input
+        mode = tf.keras.applications.vgg16.preprocess_input
     elif model == 'ResNet50V2':
         model = ResNet50V2
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.resnet_v2.preprocess_input
+        mode = tf.keras.applications.resnet_v2.preprocess_input
     elif model == 'InceptionV3':
         model = InceptionV3
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.inception_v3.preprocess_input
+        mode = tf.keras.applications.inception_v3.preprocess_input
     elif model == 'InceptionResNetV2':
         model = InceptionResNetV2
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.inception_resnet_v2.preprocess_input
+        mode = tf.keras.applications.inception_resnet_v2.preprocess_input
     elif model == 'DenseNet201':
         model = DenseNet201
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.densenet.preprocess_input
+        mode = tf.keras.applications.densenet.preprocess_input
     elif model == 'EfficientNetV2B3':
         model = EfficientNetV2B3
-        if mode == 'keras_imgnet':
-            mode = None
+        mode = None
     elif model == 'lab_two_path_inception_v3':
         model = lab_two_path_inception_v3
+        mode = tf.keras.applications.inception_v3.preprocess_input
     elif model == 'lab_two_path_inceptionresnet_v2':
         model = lab_two_path_inceptionresnet_v2
+        mode = tf.keras.applications.inception_resnet_v2.preprocess_input
     elif model == 'ConvNeXtSmall':
         model = ConvNeXtSmall
+        mode = None
     elif model == 'TFConvNextModel':
         model = TFConvNextModel.from_pretrained("facebook/convnext-tiny-224")
+        mode = None
     elif model == 'TFViTModel':
         model = TFViTModel.from_pretrained("google/vit-base-patch16-224")
+        mode = None
     elif model == 'TFSwinModel':
         model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
+        mode = None
     return (model, mode)
 
 
-def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
+def prepare_model(args, model, mode, t_type, weights):
     """
     Prepare the model
 
@@ -419,7 +426,7 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
 
     if t_type == 'transformer':
         # HF -> channel first
-        input_shape = (input_shape[-1], input_shape[1], input_shape[0])
+        input_shape = (args.input_shape[-1], args.input_shape[1], args.input_shape[0])
         print(f"input shape: {input_shape}")
         inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
         # get last layer output, retrieve hidden states
@@ -431,12 +438,12 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         # last_hidden_states = outputs.last_hidden_state
         # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
         outputs = keras.layers.Dense(
-            n_classes, activation='softmax', name='predictions')(x)
+            args.n_classes, activation='softmax', name='predictions')(x)
         # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)
     else:
-        inputs = tfl.Input(shape=input_shape)
+        inputs = tfl.Input(shape=args.input_shape)
         x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
         
         base_model = model(input_tensor=x,
@@ -445,54 +452,58 @@ def prepare_model(args, model, input_shape, n_classes, mode, t_type, weights):
         if t_type == 'transfer':
             base_model.trainable = False
         else:
-            # unfreeze all or part of the base model and retrain the whole model end-to-end
+            # Finetune : unfreeze (all or part of) the base model and train the entire model end-to-end with a low learning rate.
             base_model.trainable = True
+            # although the base model becomes trainable, it is still running in inference mode since we passed `training=False`
 
-        if t_type == 'transfer':
-            # keep the BatchNormalization layers in inference mode by passing training=False
-            x = base_model(x, training=False)
-        else:
-            x = base_model(x, training=True)
+        # keep the BatchNormalization layers in inference mode by passing training=False
+        # the batchnorm layers will not update their batch statistics.
+        # This prevents the batchnorm layers from undoing all the training we've done so far.
+        x = base_model(x, training=False)
 
         x = keras.layers.GlobalAveragePooling2D()(x)
         x = keras.layers.Dropout(0.2)(x)
         outputs = keras.layers.Dense(
-            n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
+            args.n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
 
         model = keras.Model(inputs, outputs)
 
     return (model, mode)
 
 
-def get_models(args, n_classes, we=None):
+# Unfreeze the base_model. Note that it keeps running in inference mode
+# since we passed `training=False` when calling it. This means that the batchnorm layers will not update their batch statistics.
+## FINETUNE
+#base_model.trainable = True
+#model.summary()
+#model.compile(
+#    optimizer=keras.optimizers.Adam(1e-5),  # Low learning rate
+#    loss=keras.losses.BinaryCrossentropy(from_logits=True),
+#    metrics=[keras.metrics.BinaryAccuracy()],
+#)
+#epochs = 10
+#model.fit(train_ds, epochs=epochs, validation_data=validation_ds)
+
+def get_models(args, we=None):
     """
     Get the models for the training and testing.
     """
 
-    input_shape = args.input_shape
     with open('../resources/models_to_eval.json') as f:
         model_d = json.load(f)
     to_test = args.models
     d_subset = {key: model_d[key] for key in to_test}
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
-        if name == "baseline_samplewise":
-            mode = 'scale_std'
-            model = convolutional_model(args, input_shape, n_classes=n_classes, mode=mode)
-            models_to_test[name] = (model, mode)
-        elif name == "simple_std":
-            mode = 'sample_wise_scaling'
-            model = simple_conv_model(args,
-                input_shape, n_classes=n_classes, mode=mode)
+        model, mode = set_model(args, params['model'], params['mode'])
+        if name in ["simple_std", "baseline_samplewise", "alexnet", "my_Resnet50"]:
             models_to_test[name] = (model, mode)
         else:
-            model, mode = set_model(params['model'], params['mode'])
-            t_type = params['t_type']
-            if t_type in ['transfer', 'finetune']:
+            if params['t_type'] in ['transfer', 'finetune']:
                 weights = 'imagenet'
             else:
                 weights = None
-            models_to_test[name] = prepare_model(args, model, input_shape, n_classes, mode, t_type, weights)
+            models_to_test[name] = prepare_model(args, model, mode, params['t_type'], weights)
 
     return models_to_test
 

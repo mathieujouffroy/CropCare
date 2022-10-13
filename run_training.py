@@ -137,9 +137,10 @@ def main():
 
     # Retrieve Models to evaluate
     if args.n_classes == 2:
-        models_dict = get_models(args, args.n_classes-1)
+        args.n_classes = 1
+        models_dict = get_models(args)
     else:
-        models_dict = get_models(args, args.n_classes)
+        models_dict = get_models(args)
 
     # Set training parameters
     args.nbr_train_batch = int(math.ceil(args.len_train / args.batch_size))
