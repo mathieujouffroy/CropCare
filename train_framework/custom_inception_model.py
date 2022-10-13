@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.layers as tfl
 import tensorflow.keras.backend as K
+from train_framework.preprocess_tensor import preprocess_image
 
 class CopyChannels(tfl.Layer):
     """
@@ -70,8 +71,7 @@ def conv2d_bn(x,
   return x
 
 
-def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
-                              weights=None,
+def lab_two_path_inception_v3(args, mode, 
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
                               model_name='two_path_inception_v3'):
@@ -92,11 +92,13 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
         ValueError: in case of invalid argument for `weights`,
             or invalid input shape.
     """
-    img_input = tfl.Input(shape=input_shape)
+    img_input = tfl.Input(shape=args.input_shape)
+
+    prep = tfl.Lambda(preprocess_image, arguments={'mean_arr': args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(img_input)
 
     channel_axis = 3
 
-    l_branch = CopyChannels(0, 1)(img_input)
+    l_branch = CopyChannels(0, 1)(prep)
     l_branch = conv2d_bn(l_branch, int(round(32*l_ratio)), 3, 3, strides=(2, 2),
                          padding='valid', name='lab_3x3l')
     l_branch = conv2d_bn(l_branch, int(round(32*l_ratio)), 3, 3,
@@ -106,7 +108,7 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
     l_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_l')(l_branch)
 
-    ab_branch = CopyChannels(1, 2)(img_input)
+    ab_branch = CopyChannels(1, 2)(prep)
     ab_branch = conv2d_bn(ab_branch, int(round(32*ab_ratio)), 3, 3, strides=(2, 2),
                           padding='valid', name='lab_3x3ab')
     ab_branch = conv2d_bn(ab_branch, int(round(32*ab_ratio)), 3, 3,
@@ -211,21 +213,17 @@ def lab_two_path_inception_v3(input_shape, n_classes, include_top=True,
         [branch1x1, branch7x7, branch7x7dbl, branch_pool], axis=channel_axis,
         name='mixed5')
 
-    if include_top:
-        # Classification block
-        x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
-        #x = tfl.Dropout(0.2)(x)
-        x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
 
-    inputs = img_input
+    # Classification block
+    x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
+    x = tfl.Dropout(0.2)(x)
+    outputs = tfl.Dense(args.n_classes, activation='softmax', name='predictions')(x)
+
     # Create model.
-    model = tf.keras.models.Model(inputs, x, name=model_name)
-
-    # Load weights.
-    if weights is not None:
-        model.load_weights(weights)
+    model = tf.keras.models.Model(img_input, outputs, name=model_name)
 
     return model
+
 
 def conv2d_bn_ir(
     x,
@@ -354,8 +352,7 @@ def inception_resnet_block(x, scale, block_type, block_idx, activation="relu"):
     return x
 
 
-def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
-                              weights=None,
+def lab_two_path_inceptionresnet_v2(args, mode,
                               l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
                               ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
                               model_name='two_path_inception_v3'):
@@ -376,11 +373,13 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
         ValueError: in case of invalid argument for `weights`,
             or invalid input shape.
     """
-    img_input = tfl.Input(shape=input_shape)
+    img_input = tfl.Input(shape=args.input_shape)
+
+    prep = tfl.Lambda(preprocess_image, arguments={'mean_arr': args.mean_arr, 'std_arr':args.std_arr, 'mode':mode})(img_input)
 
     channel_axis = 3
 
-    l_branch = CopyChannels(0, 1)(img_input)
+    l_branch = CopyChannels(0, 1)(prep)
     l_branch = conv2d_bn_ir(l_branch, int(round(32*l_ratio)), 3, strides=2,
                          padding='valid', name='lab_3x3l')
     l_branch = conv2d_bn_ir(l_branch, int(round(32*l_ratio)), 3,
@@ -390,7 +389,7 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
     l_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_l')(l_branch)
 
-    ab_branch = CopyChannels(1, 2)(img_input)
+    ab_branch = CopyChannels(1, 2)(prep)
     ab_branch = conv2d_bn_ir(ab_branch, int(round(32*ab_ratio)), 3, strides=2,
                           padding='valid', name='lab_3x3ab')
     ab_branch = conv2d_bn_ir(ab_branch, int(round(32*ab_ratio)), 3,
@@ -468,19 +467,14 @@ def lab_two_path_inceptionresnet_v2(input_shape, n_classes, include_top=True,
     # Final convolution block: 8 x 8 x 1536
     x = conv2d_bn_ir(x, 1536, 1, name='last_conv')
 
-    if include_top:
-        # Classification block
-        x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
-        #x = tfl.Dropout(0.2)(x)
-        x = tfl.Dense(n_classes, activation='softmax', name='predictions')(x)
+    
+    # Classification block
+    x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
+    x = tfl.Dropout(0.2)(x)
+    outputs = tfl.Dense(args.n_classes, activation='softmax', name='predictions')(x)
 
-    inputs = img_input
     # Create model.
-    model = tf.keras.models.Model(inputs, x, name=model_name)
-
-    # Load weights.
-    if weights is not None:
-        model.load_weights(weights)
+    model = tf.keras.models.Model(img_input, outputs, name=model_name)
 
 
     return model

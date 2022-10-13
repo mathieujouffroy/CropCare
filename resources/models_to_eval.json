@@ -1,21 +1,20 @@
 {
-    "simple_std":{"model":"simple_conv_model", "mode":"scale_std", "t_type":null},
-    "baseline_samplewise":{"model":"convolutional_model", "mode":"sample_wise_scaling", "t_type":null},
-    "alexnet":{"model":"alexnet_model", "mode":"centering", "t_type":null},
-    "my_Resnet50":{"model":"Resnet50_model", "mode":"sample_wise_scaling", "t_type":null},
-        
-    "VGG16":{"model":"VGG16", "mode":"keras_imgnet", "t_type":"transfer"},
-    "ResNet50V2":{"model":"ResNet50V2", "mode":"keras_imgnet", "t_type":"transfer"},
-    "InceptionV3":{"model":"InceptionV3", "mode":"sample_wise_scaling", "t_type":"transfer"}, 
-    "InceptionResNetV2":{"model":"InceptionResNetV2", "mode":"keras_imgnet", "t_type":"transfer"},
-    "DenseNet201":{"model":"DenseNet201", "mode":"keras_imgnet", "t_type":"transfer"},
-    "EfficientNetV2B3":{"model":"EfficientNetV2B3", "mode":null, "t_type":"transfer"},
-    "pret_ConvNext":{"model":"ConvNeXtSmall", "mode":null, "t_type":"transfer"},
-
-    "LAB_2path_InceptionV3":{"model":"lab_two_path_inception_v3", "mode":"sample_wise_scaling", "t_type":null},
-    "LAB_2path_InceptionResNetV2":{"model":"lab_two_path_inceptionresnet_v2", "mode":"sample_wise_scaling", "t_type":null},
+    "simple_conv":{"mode":"scale_std", "t_type":null},
+    "conv_baseline":{"mode":"sample_wise_scaling", "t_type":null},
+    "alexnet":{"mode":"centering", "t_type":null},
+    "my_Resnet50":{"mode":"sample_wise_scaling", "t_type":null},
+    "lab_two_path_inception_v3":{"mode":"sample_wise_scaling", "t_type":null},
+    "lab_two_path_inceptionresnet_v2":{"mode":"sample_wise_scaling", "t_type":null},
     
-    "ConvNext":{"model":"TFConvNextModel", "mode":null, "t_type":"transformer"},
-    "VIT":{"model":"TFViTModel", "mode":null, "t_type":"transformer"},
-    "Swin":{"model":"TFSwinModel", "mode":null, "t_type":"transformer"}
+    "VGG16":{"mode":"keras_imgnet", "t_type":"transfer"},
+    "ResNet50V2":{"mode":"keras_imgnet", "t_type":"transfer"},
+    "InceptionV3":{"mode":"keras_imgnet", "t_type":"transfer"}, 
+    "InceptionResNetV2":{"mode":"keras_imgnet", "t_type":"transfer"},
+    "DenseNet201":{"mode":"keras_imgnet", "t_type":"transfer"},
+    "EfficientNetV2B3":{"mode":null, "t_type":"transfer"},
+    "ConvNeXtSmall":{"mode":null, "t_type":"transfer"},
+
+    "TFConvNextModel":{"mode":null, "t_type":"transformer"},
+    "TFViTModel":{"mode":null, "t_type":"transformer"},
+    "TFSwinModel":{"mode":null, "t_type":"transformer"}
 }

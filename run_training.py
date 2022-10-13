@@ -160,10 +160,7 @@ def main():
     logger.info(f"  Class weights = {class_weights}")
 
     # Train and evaluate
-    for m_name, model_tupl in models_dict.items():
-        model = model_tupl[0]
-        mode = model_tupl[1]
-
+    for m_name, model in models_dict.items():
         tf.keras.backend.clear_session()
         # Define directory to save model checkpoints and logs
         date = datetime.datetime.now().strftime("%d:%m:%Y_%H:%M:%S")
