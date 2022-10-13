@@ -95,7 +95,7 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     # Define callbacks for debugging and progress tracking
     checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.05, verbose=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.2, verbose=1),
         tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
         tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m", save_best_only=True, verbose=1, mode="max"),
         #tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-8 * 10**(epoch / 20))

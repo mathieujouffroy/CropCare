@@ -7,6 +7,8 @@ seed: 42
 
 # Images shape
 input_shape: !!python/tuple [128, 128, 3]
+# transformers
+trf_input_shape: !!python/tuple [224, 224, 3]
 
 # the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
 class_type: 'disease'

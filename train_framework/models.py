@@ -375,7 +375,7 @@ def Resnet50_model(args, mode):
     return model
 
 
-def set_model(args, model, mode, n_classes):
+def set_model(args, model, mode):
     """ Set out models with their appropriate preprocessing functions. """
     
     if model == "simple_conv":
@@ -497,7 +497,7 @@ def get_models(args, we=None):
     Get the models for the training and testing.
     """
 
-    with open('../resources/models_to_eval.json') as f:
+    with open('resources/models_to_eval.json') as f:
         model_d = json.load(f)
     to_test = args.models
     d_subset = {key: model_d[key] for key in to_test}
@@ -507,7 +507,7 @@ def get_models(args, we=None):
         if params['t_type'] == 'transfer':
             weights = 'imagenet'
         elif params['t_type'] == "finetune":
-            weights = tf.keras.models.load_model(f"resources/best_models/cnn/{}/")
+            weights = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5")
         else:
             weights = None
         models_to_test[name] = prepare_model(args, model, mode, params['t_type'], weights)

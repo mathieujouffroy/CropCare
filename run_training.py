@@ -102,7 +102,7 @@ def main():
     if args.transformer:
         del X_train, X_valid, y_train, y_valid
         gc.collect()
-        img_size = (224, 224)
+        img_size = args.trf_input_shape[0:2]
         train_set = load_from_disk(f'{args.fe_dataset}/train')
         valid_set = load_from_disk(f'{args.fe_dataset}/valid')
         data_collator = DefaultDataCollator(return_tensors="tf")
@@ -120,7 +120,7 @@ def main():
                     batch_size=32,
                     collate_fn=data_collator)
     else:
-        img_size = (128, 128)
+        img_size = args.input_shape[0:2]
         train_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         valid_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         del X_train, X_valid, y_train, y_valid
