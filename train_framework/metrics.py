@@ -12,7 +12,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.metrics import auc, roc_auc_score, roc_curve, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 from train_framework.utils import logging
-#from interpretability import *
+from train_framework.interpretability import *
 
 logger = logging.getLogger(__name__)
 
@@ -218,10 +218,11 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-    #                model_metrics_dir, m_type)
-#
-    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-#s                     model_metrics_dir, m_type)
+    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                    model_metrics_dir, m_type)
+
+    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                    model_metrics_dir, m_type)
+
     # MODEL INTERPRETABILITY
-    #save_and_display_gradcam(args, model, m_name, mode, x_test, 4, model_metrics_dir)
+    save_and_display_gradcam(args, model, m_name, x_test, 4, model_metrics_dir)

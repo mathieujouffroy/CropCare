@@ -307,7 +307,7 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{col} distribution across dataset", showlegend=False)
             this_figure.show()
-            this_figure.write_image("../resources/data_meta/ds_labels_distrib.jpeg")
+            this_figure.write_image("../resources/metadata/ds_labels_distrib.jpeg")
 
 
     def plant_overview(self, plant_df):
@@ -352,7 +352,7 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{elem} class distribution", showlegend=False)
             this_figure.show()
-            this_figure.write_image(f"../resources/data_meta/ds_{elem}_distrib.jpeg")
+            this_figure.write_image(f"../resources/metadata/ds_{elem}_distrib.jpeg")
 
 
 def resize_images(img_arr, img_size):

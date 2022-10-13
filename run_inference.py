@@ -105,7 +105,10 @@ def main():
                     batch_size=32,
                     collate_fn=data_collator)
     else:
-        img_size = (128, 128)
+        if args.xp_dir == 'resources/best_models/transformers':
+            img_size = (224, 224)
+        else:
+            img_size = (128, 128)
         test_set = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
     test_set = prep_ds_input(args, test_set, args.len_test, img_size)

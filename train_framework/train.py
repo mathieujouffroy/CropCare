@@ -4,7 +4,7 @@ import datetime
 import wandb
 import numpy as np
 import tensorflow as tf
-from transformers import create_optimizer
+from transformers import create_optimizer, AdamWeightDecay, get_scheduler
 from sklearn.utils.class_weight import compute_class_weight
 from train_framework.custom_callbacks import RocAUCScore
 from train_framework.utils import logging
@@ -66,7 +66,17 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
 
     # Prepare optimizer
     if args.transformer:
-        lr = 3e-5
+        #--model vit_small_patch16_224 --sched cosine --epochs 300 --opt adamp -j 8 --warmup-lr 1e-6 --mixup .2 --model-ema --model-ema-decay 0.99996 --aa rand-m9-mstd0.5-inc1 --remode pixel --reprob 0.25 --amp --lr .001 --weight-decay .01 -b 256
+        # cosine scheduler
+        #lr_scheduler_type="cosine" -≥ VIT
+        #optimizer = AdamWeightDecay(lr=2e-5, weight_decay_rate=0.01)
+        #lr_scheduler = get_scheduler(
+        #    "linear",
+        #    optimizer=optimizer,
+        #    num_warmup_steps=0,
+        #    num_training_steps=args.n_training_steps,
+        #)
+        lr = 2e-5
         optimizer, lr_schedule = create_optimizer(
         init_lr=lr,
         num_train_steps=args.n_training_steps,
@@ -85,10 +95,9 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     # Define callbacks for debugging and progress tracking
     checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.5, verbose=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.05, verbose=1),
         tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-        tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m",
-                                  save_best_only=True, verbose=1, mode="max"),
+        tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m", save_best_only=True, verbose=1, mode="max"),
         #tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-8 * 10**(epoch / 20))
     ]
     if args.wandb:
@@ -97,7 +106,7 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         wandb.define_metric("val_loss", summary="min")
         wandb.define_metric("val_f1_m", summary="max")
     else:
-        callback_lst.append(callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir))
+        callback_lst.append(tf.keras.callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir))
 
     logger.info("\n\n")
     logger.info(f"  =========== TRAINING MODEL {m_name} ===========")

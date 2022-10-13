@@ -23,7 +23,7 @@ dataset: 'resources/datasets/cnn/test_augm_disease_380_ds_128.h5'
 #augm_disease_60343_ds_128.h5
 
 # the path to the root directory used to store experiments
-xp_dir: 'resources/best_models/cnn'
-#xp_dir: 'resources/best_models/transformers'
+#xp_dir: 'resources/best_models/cnn'
+xp_dir: 'resources/best_models/transformers'
 
 output_dir: 'inference/best_models'
