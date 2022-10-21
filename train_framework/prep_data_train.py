@@ -157,39 +157,3 @@ def get_relevant_datasets(args, logger):
 
         X_splits, y_splits = get_split_sets(args, images, labels, logger)
         return X_splits, y_splits, n_classes
-
-
-def viz_dataset_wandb(args, train_x, train_y, valid_x, valid_y, nbr_imgs):
-    # Initialize a new W&B run
-    run = wandb.init(project='cropdis_vis', group='viz_data', reinit=True)
-    # Intialize a W&B Artifacts
-    ds = wandb.Artifact("cropdis_dataset", "dataset")
-    # Initialize an empty table
-    train_table = wandb.Table(columns=[], data=[])
-    # Add training data
-    train_table.add_column('image', train_x[:nbr_imgs])
-    # Add training label_id
-    train_table.add_column('label_id', train_y[:nbr_imgs])
-    # Add training class names
-    train_table.add_computed_columns(lambda ndx, row:{
-        "images": wandb.Image(row["image"]),
-        "class_names": args.class_names[str(row["label_id"])]
-        })
-
-    # Let's do the same for the validation data
-    valid_table = wandb.Table(columns=[], data=[])
-    valid_table.add_column('image', valid_x)
-    valid_table.add_column('label_id', valid_y)
-    valid_table.add_computed_columns(lambda ndx, row:{
-        "images": wandb.Image(row["image"]),
-        "class_name": args.class_names[str(row["label_id"])]
-        })
-
-    # Add the table to the Artifact
-    ds['train_data'] = train_table
-    ds['valid_data'] = valid_table
-    # Save the dataset as an Artifact
-    ds.save()
-    run.log_artifact(ds)
-    # Finish the run
-    run.finish()

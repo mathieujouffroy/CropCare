@@ -13,7 +13,7 @@ from transformers import DefaultDataCollator
 from train_framework.metrics import compute_training_metrics, f1_m
 from train_framework.models import get_models
 from train_framework.utils import set_logging, set_seed, set_wandb_project_run, parse_args
-from train_framework.prep_data_train import load_split_hdf5, viz_dataset_wandb
+from train_framework.prep_data_train import load_split_hdf5
 from train_framework.preprocess_tensor import prep_ds_input
 from train_framework.custom_loss import poly_loss, poly1_cross_entropy_label_smooth
 from train_framework.train import generate_class_weights, train_model
@@ -97,9 +97,6 @@ def main():
         class_weights = generate_class_weights(y_train, args.class_type)
     else:
         class_weights = None
-
-    #if args.wandb:
-    #    viz_dataset_wandb(args, X_train, y_train, X_valid, y_valid, 1000)
 
     ## Create Dataset
     if args.transformer:

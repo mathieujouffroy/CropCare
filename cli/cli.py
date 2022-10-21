@@ -1,14 +1,50 @@
-import itertools
-import threading
-import time
 import sys
-import h5py
 import json
+from tkinter import N
+import wandb
+import random
 import numpy as np
 from cli_utils import bcolors, strawb, animate
 from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
 from leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
+
+def get_imgs_table(valid_x, valid_y, nbr_imgs):
+    img_dict = dict()
+    for img, label in zip(valid_x, valid_y):
+        if label not in img_dict.keys():
+            img_dict[label] = []
+        img_dict[label].append(img)
+
+    imgs_table = []
+    i = 0
+    for unique_class, img_lst in img_dict.items():
+        sample = random.sample(img_lst, nbr_imgs)
+        for img in sample:
+            imgs_table.append([i, unique_class, wandb.Image(img)])
+            i += 1
+
+    return imgs_table
+
+def viz_dataset_wandb(valid_x, valid_y, nbr_imgs):
+    imgs_table = get_imgs_table(valid_x, valid_y, nbr_imgs)
+    # Initialize a new W&B run
+    run = wandb.init(project='cropdis_vis', group='viz_data', reinit=True)
+    # Intialize a W&B Artifacts
+    ds = wandb.Artifact("cropdis_ds", type="raw_data")
+
+    # create a wandb.Table() with corresponding columns
+    columns = ["id", "image", "label"]
+
+    valid_table = wandb.Table(data=imgs_table, columns=columns)
+    run.log({"table_key": valid_table})
+
+    # Add the table to the Artifact
+    ds.add(valid_table, 'valid_data')
+    run.log_artifact(ds)
+    #ds.save()
+    wandb.run.finish()
+
 
 def get_split_sets(seed, class_type, images, labels):
     """
@@ -66,6 +102,7 @@ def dump_training_stats(X_train, label_type, prefix):
 def main():
     if len(sys.argv) == 2:
         quit_lst = ['q', 'quit']
+        animate()
         plant_data = PlantDataset(sys.argv[1], verbose=True)
         plant_df = plant_data.load_data()
         print(
@@ -81,6 +118,7 @@ def main():
         X_splits, y_splits = get_split_sets(42, label_type, noseg_images, labels)
         X_train, X_valid, X_test = X_splits
         y_train, y_valid, y_test = y_splits
+        viz_dataset_wandb(X_valid, y_valid, 5)
         # Get stats from training set for data preprocessing
         #dump_training_stats(X_train, label_type, prefix='augm_')
         store_hdf5(f"../resources/datasets/augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
