@@ -1,60 +1,48 @@
-#
-# YAML configuration file for train.py
-#
+# YAML configuration file for run_training.py
 
 # the random seed, for reproducibility
 seed: 42
 
 # Images shape
 input_shape: !!python/tuple [128, 128, 3]
-# transformers
-trf_input_shape: !!python/tuple [224, 224, 3]
+transformers_input_shape: !!python/tuple [224, 224, 3]
 
-# the type of classification we want to implement ['disease', 'plant', 'healthy', 'gen_disease']
+# the type of classification we want to implement
+# ['disease', 'plant', 'healthy', 'gen_disease']
 class_type: 'disease'
 
 # careful not to use a too large batch size, might lead to OOM errors
 batch_size: 32
-
-# Total number of training epochs to perform.
 n_epochs: 20
-
-# the optimizer to use
 optimizer: 'adam'
-
-# the learning rate for the optimizer
 learning_rate: 0.001
+lr_decay_rate: 0.1
+# use 'sparse_categorical_crossentropy' loss for transformers
+loss: 'categorical_crossentropy'
 
+# Option to use pipeline for transformers
+transformer: False
 # Option to use class weights for imbalanced dataset
 class_weights: True
-
 # Option to use PolyLoss as loss function
 polyloss: False
-
-# option to compute advanced metrics while training multiple models
+# Option to compute advanced metrics while training multiple models
 eval_during_training: False
-
+# Models to train
 models: ["pret_EfficientNetV2B3", "InceptionResNetV2"]
 #, "ResNet50V2","InceptionV3","DenseNet201", "EfficientNetV2B3", "pret_ResNet50V2","pret_DenseNet201","pret_EfficientNetV2B3"]
 #"LAB_2path_InceptionV3", "LAB_2path_InceptionResNetV2",
 
-
 # Option to print all warnings related to data processing
 verbose: True
-
 # Option to use wandb for logging
 wandb: True
-
 # Option to overwrite the content of the output directory
 overwrite_output_dir: True
-
-#transformer: True
-transformer: False
 
 # the path to the directory of the dataset
 dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
 fe_dataset: 'resources/datasets/transformers_ds_224/vit'
-
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/comp-top-k'  # -> all augmented
 

@@ -12,6 +12,12 @@ from train_framework.utils import logging
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 logger = logging.getLogger(__name__)
 
+def lr_scheduler(args):
+    if args.n_epochs < 9:
+        return args.learning_rate
+    else:
+        return args.learning_rate * tf.math.exp(args.lr_decay_rate)
+
 def generate_class_weights(y_train, class_type):
     """
     Generate the class weights for a given classification.
@@ -56,8 +62,8 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     Parameters:
         args: Argument Parser
         m_name: Model name
-        model: Model to train 
-        train_set(tensorflow.Dataset): training set 
+        model: Model to train
+        train_set(tensorflow.Dataset): training set
         valid_set(tensorflow.Dataset): validation set
         class_weights: Weights for imbalanced classification
     Returns:
@@ -93,15 +99,18 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
+    #scheduler = lr_scheduler(args)
     checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=0.2, verbose=1),
-        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=1),
-        tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m", save_best_only=True, verbose=1, mode="max"),
+        #tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=args.lr_decay_rate, verbose=1),
+        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=0, restore_best_weights=True),
+        #tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m", save_best_only=True, verbose=1, mode="max"),
         #tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-8 * 10**(epoch / 20))
     ]
     if args.wandb:
-        wandb_callback = wandb.keras.WandbCallback()
+        # monitor the val_loss to save the best mode
+        # save histograms of the weights of our model's layers.
+        wandb_callback = wandb.keras.WandbCallback(monitor='val_loss',log_weights=True)
         callback_lst.append(wandb_callback)
         wandb.define_metric("val_loss", summary="min")
         wandb.define_metric("val_f1_m", summary="max")

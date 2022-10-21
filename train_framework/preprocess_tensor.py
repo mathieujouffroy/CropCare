@@ -24,7 +24,7 @@ def get_mean_std(train_set):
 @tf.function
 def resize_img(img, label, size):
     """ Resize an image to the give size """
-    
+
     img = tf.image.resize(img, size)
     return img, label
 
@@ -32,7 +32,7 @@ def resize_img(img, label, size):
 @tf.function
 def prep_inputs_and_labels(img, label, n_classes, size):
     """ Preprocess our inputs and labels. Resizing and one-hot-encoding. """
-    
+
     img, label = resize_img(img, label, size)
     label = tf.one_hot(label, n_classes,  dtype='uint8')
     return img, label
@@ -69,8 +69,8 @@ def preprocess_image(tensor_img, mean_arr, std_arr, mode='centering'):
             - centering: will convert the images from RGB to BGR,
                 then will zero-center each color channel with
                 respect to the training dataset, without scaling.
-            - sample_wise_scaling: will scale pixels between -1 and 1, sample-wise.
-            - scale_std: will scale pixels between 0 and 1 then zero-center
+            - sample_wise_scaling (tf): will scale pixels between -1 and 1, sample-wise.
+            - scale_std (torch): will scale pixels between 0 and 1 then zero-center
                 by mean and finally normalize each channel with respect to the
                 training dataset.
     Returns:

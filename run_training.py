@@ -13,7 +13,7 @@ from transformers import DefaultDataCollator
 from train_framework.metrics import compute_training_metrics, f1_m
 from train_framework.models import get_models
 from train_framework.utils import set_logging, set_seed, set_wandb_project_run, parse_args
-from train_framework.prep_data_train import load_split_hdf5
+from train_framework.prep_data_train import load_split_hdf5, viz_dataset_wandb
 from train_framework.preprocess_tensor import prep_ds_input
 from train_framework.custom_loss import poly_loss, poly1_cross_entropy_label_smooth
 from train_framework.train import generate_class_weights, train_model
@@ -41,7 +41,7 @@ def main():
 
     # Set relevant loss and accuracy
     if args.class_type == 'healthy':
-        args.loss = tf.keras.losses.BinaryCrossentropy()
+        #args.loss = tf.keras.losses.BinaryCrossentropy()
         args.metrics = [tf.keras.metrics.CategoricalAccuracy(
             name='binary_acc', dtype=None)]
     else:
@@ -49,7 +49,7 @@ def main():
         if args.transformer:
             # one-hot encoded labels because are memory inefficient (GPU memory)
             # guarantee of OOM when you are training a language model with a vast vocabulary size, or big image dataset
-            args.loss = tf.keras.losses.SparseCategoricalCrossentropy()
+            #args.loss = tf.keras.losses.SparseCategoricalCrossentropy()
             args.metrics = [
                 tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.SparseTopKCategoricalAccuracy(5, name="top-5-accuracy")
@@ -98,11 +98,14 @@ def main():
     else:
         class_weights = None
 
+    #if args.wandb:
+    #    viz_dataset_wandb(args, X_train, y_train, X_valid, y_valid, 1000)
+
     ## Create Dataset
     if args.transformer:
         del X_train, X_valid, y_train, y_valid
         gc.collect()
-        img_size = args.trf_input_shape[0:2]
+        img_size = args.transformers_input_shape[0:2]
         train_set = load_from_disk(f'{args.fe_dataset}/train')
         valid_set = load_from_disk(f'{args.fe_dataset}/valid')
         data_collator = DefaultDataCollator(return_tensors="tf")

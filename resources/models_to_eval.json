@@ -5,14 +5,14 @@
     "my_Resnet50":{"mode":"sample_wise_scaling", "t_type":null},
     "lab_two_path_inception_v3":{"mode":"sample_wise_scaling", "t_type":null},
     "lab_two_path_inceptionresnet_v2":{"mode":"sample_wise_scaling", "t_type":null},
-    
+
     "VGG16":{"mode":"keras_imgnet", "t_type":"transfer"},
     "ResNet50V2":{"mode":"keras_imgnet", "t_type":"transfer"},
-    "InceptionV3":{"mode":"keras_imgnet", "t_type":"transfer"}, 
+    "InceptionV3":{"mode":"keras_imgnet", "t_type":"transfer"},
     "InceptionResNetV2":{"mode":"keras_imgnet", "t_type":"transfer"},
     "DenseNet201":{"mode":"keras_imgnet", "t_type":"transfer"},
     "EfficientNetV2B3":{"mode":null, "t_type":"transfer"},
-    "ConvNeXtSmall":{"mode":null, "t_type":"transfer"},
+    "ConvNeXtSmall":{"mode":null, "t_type":null},
 
     "TFConvNextModel":{"mode":null, "t_type":"transformer"},
     "TFViTModel":{"mode":null, "t_type":"transformer"},

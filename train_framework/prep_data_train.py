@@ -1,6 +1,7 @@
 import h5py
 import datasets
 import numpy as np
+import wandb
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from train_framework.utils import bcolors, logging
@@ -101,6 +102,33 @@ def get_split_sets(args, images, labels, logger):
     return [X_train, X_valid, X_test], label_split_lst
 
 
+def load_split_hdf5(name, split_set):
+    """
+    Reads image from HDF5.
+
+    Args:
+        name(str):              path to the HDF5 file (dataset)
+        split_set(str):       type of classification
+    Returns:
+        images(numpy.array):    images array, (N, 256, 256, 3) to be stored
+        labels(numpy.array):    labels array, (N,) to be stored
+    """
+    images, labels = [], []
+    # Open the HDF5 file
+    file = h5py.File(f"{name}", "r+")
+
+    if split_set == 'train':
+        images = np.array(file["/train_images"]).astype(np.uint8)
+        labels = np.array(file["/train_labels"]).astype(np.uint8)
+    elif split_set == 'valid':
+        images = np.array(file["/valid_images"]).astype(np.uint8)
+        labels = np.array(file["/valid_labels"]).astype(np.uint8)
+    elif split_set == 'test':
+        images = np.array(file["/test_images"]).astype(np.uint8)
+        labels = np.array(file["/test_labels"]).astype(np.uint8)
+    return images, labels
+
+
 def get_relevant_datasets(args, logger):
     """
     Get the relevant datasets for a given label.
@@ -131,65 +159,37 @@ def get_relevant_datasets(args, logger):
         return X_splits, y_splits, n_classes
 
 
+def viz_dataset_wandb(args, train_x, train_y, valid_x, valid_y, nbr_imgs):
+    # Initialize a new W&B run
+    run = wandb.init(project='cropdis_vis', group='viz_data', reinit=True)
+    # Intialize a W&B Artifacts
+    ds = wandb.Artifact("cropdis_dataset", "dataset")
+    # Initialize an empty table
+    train_table = wandb.Table(columns=[], data=[])
+    # Add training data
+    train_table.add_column('image', train_x[:nbr_imgs])
+    # Add training label_id
+    train_table.add_column('label_id', train_y[:nbr_imgs])
+    # Add training class names
+    train_table.add_computed_columns(lambda ndx, row:{
+        "images": wandb.Image(row["image"]),
+        "class_names": args.class_names[str(row["label_id"])]
+        })
 
-def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
-    """
-    Stores an array of images to HDF5.
+    # Let's do the same for the validation data
+    valid_table = wandb.Table(columns=[], data=[])
+    valid_table.add_column('image', valid_x)
+    valid_table.add_column('label_id', valid_y)
+    valid_table.add_computed_columns(lambda ndx, row:{
+        "images": wandb.Image(row["image"]),
+        "class_name": args.class_names[str(row["label_id"])]
+        })
 
-    Args:
-    images(numpy.array):    images array, (N, 256, 256, 3) to be stored
-    healthy(numpy.array):   healthy/sick (labels) array, (N, 1) to be stored
-    plant(numpy.array):     plant (labels) array, (N, 1) to be stored
-    disease(numpy.array):   disease (labels) array, (N, 1) to be stored
-    gen_disease(numpy.array): general disease (labels) array, (N, 1) to be stored
-    """
-
-    # Create a new HDF5 file
-    file = h5py.File(name, "w")
-    print(f"Train Images:     {np.shape(train_x)}  -- dtype: {train_x.dtype}")
-    print(f"Train Labels:    {np.shape(train_y)} -- dtype: {train_y.dtype}")
-
-    # Create an image dataset in the file
-    # store as uint8 -> 0-255
-    file.create_dataset("train_images", np.shape(train_x),
-                        h5py.h5t.STD_U8BE, data=train_x)
-    file.create_dataset("valid_images", np.shape(valid_x),
-                        h5py.h5t.STD_U8BE, data=valid_x)
-    file.create_dataset("test_images", np.shape(test_x),
-                        h5py.h5t.STD_U8BE, data=test_x)
-
-    file.create_dataset("train_labels", np.shape(train_y),
-                        h5py.h5t.STD_U8BE, data=train_y)
-    file.create_dataset("valid_labels", np.shape(valid_y),
-                        h5py.h5t.STD_U8BE, data=valid_y)
-    file.create_dataset("test_labels", np.shape(test_y),
-                        h5py.h5t.STD_U8BE, data=test_y)
-    file.close()
-    return file
-
-
-def load_split_hdf5(name, split_set):
-    """
-    Reads image from HDF5.
-
-    Args:
-        name(str):              path to the HDF5 file (dataset)
-        split_set(str):       type of classification
-    Returns:
-        images(numpy.array):    images array, (N, 256, 256, 3) to be stored
-        labels(numpy.array):    labels array, (N,) to be stored
-    """
-    images, labels = [], []
-    # Open the HDF5 file
-    file = h5py.File(f"{name}", "r+")
-
-    if split_set == 'train':
-        images = np.array(file["/train_images"]).astype(np.uint8)
-        labels = np.array(file["/train_labels"]).astype(np.uint8)
-    elif split_set == 'valid':
-        images = np.array(file["/valid_images"]).astype(np.uint8)
-        labels = np.array(file["/valid_labels"]).astype(np.uint8)
-    elif split_set == 'test':
-        images = np.array(file["/test_images"]).astype(np.uint8)
-        labels = np.array(file["/test_labels"]).astype(np.uint8)
-    return images, labels
+    # Add the table to the Artifact
+    ds['train_data'] = train_table
+    ds['valid_data'] = valid_table
+    # Save the dataset as an Artifact
+    ds.save()
+    run.log_artifact(ds)
+    # Finish the run
+    run.finish()
