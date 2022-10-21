@@ -18,10 +18,13 @@ def get_imgs_table(valid_x, valid_y, nbr_imgs):
 
     imgs_table = []
     i = 0
+    with open("resources/label_maps/diseases_label_map.json") as f:
+        CLASS_INDEX = json.load(f)
     for unique_class, img_lst in img_dict.items():
         sample = random.sample(img_lst, nbr_imgs)
         for img in sample:
-            imgs_table.append([i, unique_class, wandb.Image(img)])
+            class_name = CLASS_INDEX[str(unique_class)]
+            imgs_table.append([i, class_name, wandb.Image(img)])
             i += 1
 
     return imgs_table
@@ -34,7 +37,7 @@ def viz_dataset_wandb(valid_x, valid_y, nbr_imgs):
     ds = wandb.Artifact("cropdis_ds", type="raw_data")
 
     # create a wandb.Table() with corresponding columns
-    columns = ["id", "image", "label"]
+    columns = ["id", "label", "image"]
 
     valid_table = wandb.Table(data=imgs_table, columns=columns)
     run.log({"table_key": valid_table})
