@@ -106,7 +106,6 @@ def dump_training_stats(X_train, label_type, prefix):
 
 def main():
     if len(sys.argv) == 2:
-        animate()
         quit_lst = ['q', 'quit']
         plant_data = PlantDataset(sys.argv[1], verbose=True)
         plant_df = plant_data.load_data()

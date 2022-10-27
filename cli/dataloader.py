@@ -23,7 +23,7 @@ def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
     Stores an array of images to HDF5.
 
     Args:
-        name(str):				filename 
+        name(str):				filename
         train_x(numpy.array):   training images array
         valid_x(numpy.array): 	validation images array
         test_x(numpy.array):  	testing images array
@@ -31,7 +31,7 @@ def store_hdf5(name, train_x, valid_x, test_x, train_y, valid_y, test_y):
         valid_y(numpy.array): 	validation labels array
         test_y(numpy.array): 	testing labels array
     Returns:
-        file(h5py.File): file containing 
+        file(h5py.File): file containing
     """
 
     # Create a new HDF5 file
@@ -129,7 +129,7 @@ class PlantDataset():
             print(classes_folder)
         if seed is not None:
             random.seed(seed)
-            
+
         if 'Background_without_leaves' in classes_folder:
             classes_folder.remove('Background_without_leaves')
 
@@ -137,12 +137,12 @@ class PlantDataset():
             class_img_paths = glob.glob(
                 os.path.join(self.basefolder, folder, '*'))
             random.shuffle(class_img_paths)
-            
+
             split_file = folder.split('___')
             plant_specie = split_file[0].lower()
             if ',' in plant_specie:
                 plant_specie = plant_specie.replace(',', '')
-            
+
             if (len(split_file) > 1):
                 disease = split_file[1].lower()
                 state_img = dict()
@@ -153,7 +153,7 @@ class PlantDataset():
                 plant_state = f"{plant_specie}_{disease}"
                 # class: healthy -> binary
                 healthy = state_img["healthy"]
-                
+
                 img_folder_name = f"{self.basefolder}/{folder}"
                 if self.verbose:
                     print('Loading '+img_folder_name)
@@ -212,7 +212,7 @@ class PlantDataset():
             if x.dtype != 'uint8':
                 print(f"image is {x.dtype}")
 
-        images_arr = np.array(images_lst, dtype=np.uint8)
+        images_arr = np.array(images_lst)#, dtype=np.uint8)
         healthy_arr = np.array(healthy_lst).astype(int).astype(bool)
 
         plants_d = {i: np.unique(plant_lst)[i]
@@ -377,7 +377,7 @@ def create_hf_ds(images, labels, feature_extractor, class_names):
         # For multi-label classification (after one hot encoding) you can use Sequence with ClassLabel
         "label": datasets.features.ClassLabel(names=class_names)
     })
-    
+
     print(features)
     ds = datasets.Dataset.from_dict(
         {"img": images, "label": labels}, features=features)
@@ -388,7 +388,7 @@ def create_hf_ds(images, labels, feature_extractor, class_names):
     return ds
 
 def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test):
-    """ 
+    """
     Creates a training, validation and test set dataset (given the label type) with the appropriate feature
     extractor applied for each of the ViT, Swin and ConvNexT models.
     """
@@ -415,12 +415,12 @@ def create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid
             X_train, y_train, feature_extractor, class_names)
         train_sets.save_to_disk(
             f"../resources/datasets/transformers/{name}/train")
-        
+
         valid_sets = create_hf_ds(
             X_valid, y_valid, feature_extractor, class_names)
         valid_sets.save_to_disk(
             f"../resources/datasets/transformers/{name}/valid")
-        
+
         test_sets = create_hf_ds(
             X_test, y_test, feature_extractor, class_names)
         test_sets.save_to_disk(

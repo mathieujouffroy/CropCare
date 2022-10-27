@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import sys
 import time
+import itertools
 
 
 class bcolors:
@@ -31,15 +32,6 @@ strawb = """
       \ `  ,   /
        `~----~'"""
 
-
-def animate():
-    ''' Animate the loading bar '''
-    for c in itertools.cycle(['|', '/', '-', '\\']):
-        if False:
-            break
-    sys.stdout.write(f"{bcolors.OKCYAN}\r{label} {c}{bcolors.ENDC}")
-    sys.stdout.flush()
-    time.sleep(0.1)
 
 
 def plot_multiple_img(imgs, gray=False, titles=''):
