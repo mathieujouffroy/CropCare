@@ -8,9 +8,9 @@ from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_i
 from leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
 
-def get_imgs_table(valid_x, valid_y, nbr_imgs):
+def get_imgs_table(test_x, test_y, nbr_imgs):
     img_dict = dict()
-    for img, label in zip(valid_x, valid_y):
+    for img, label in zip(test_x, test_y):
         if label not in img_dict.keys():
             img_dict[label] = []
         img_dict[label].append(img)
@@ -29,8 +29,8 @@ def get_imgs_table(valid_x, valid_y, nbr_imgs):
     return imgs_table
 
 
-def viz_dataset_wandb(valid_x, valid_y, nbr_imgs, name):
-    imgs_table = get_imgs_table(valid_x, valid_y, nbr_imgs)
+def viz_dataset_wandb(test_x, test_y, nbr_imgs, name):
+    imgs_table = get_imgs_table(test_x, test_y, nbr_imgs)
     # Initialize a new W&B run
     run = wandb.init(project='cropdis_vis', reinit=True)
     # Intialize a W&B Artifacts

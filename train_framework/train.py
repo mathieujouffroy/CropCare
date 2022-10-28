@@ -12,12 +12,6 @@ from train_framework.utils import logging
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 logger = logging.getLogger(__name__)
 
-def lr_scheduler(args):
-    if args.n_epochs < 9:
-        return args.learning_rate
-    else:
-        return args.learning_rate * tf.math.exp(args.lr_decay_rate)
-
 def generate_class_weights(y_train, class_type):
     """
     Generate the class weights for a given classification.
@@ -82,9 +76,8 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         #    num_warmup_steps=0,
         #    num_training_steps=args.n_training_steps,
         #)
-        lr = 2e-5
         optimizer, lr_schedule = create_optimizer(
-        init_lr=lr,
+        init_lr=2e-5,
         num_train_steps=args.n_training_steps,
         weight_decay_rate=0.01,
         num_warmup_steps=0,
@@ -99,12 +92,10 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
     model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
-    #scheduler = lr_scheduler(args)
     checks_path = os.path.join(args.model_dir, 'best-checkpoint-f1')
     callback_lst = [
-        #tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3, factor=args.lr_decay_rate, verbose=1),
-        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5, verbose=0, restore_best_weights=True),
-        #tf.keras.callbacks.ModelCheckpoint(filepath=checks_path, monitor="val_f1_m", save_best_only=True, verbose=1, mode="max"),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=4, factor=args.lr_decay_rate, verbose=1),
+        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=6, verbose=0, restore_best_weights=True),
         #tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-8 * 10**(epoch / 20))
     ]
     if args.wandb:

@@ -4,8 +4,8 @@ import numpy as np
 import tensorflow as tf
 from train_framework.metrics import f1_m
 from train_framework.models import LayerScale
-import json 
-from tensorflow import keras 
+import json
+from tensorflow import keras
 
 ### GRADIO INTERFACE WITH PREDICTION CAM / GRADCAM / SALIENCY MAPS
 dependencies = {
@@ -35,7 +35,7 @@ def classify_image(input, label, model):
     elif model == 'ConvNext':
         input = resize_img(input, (224, 224))
         clf =  tf.keras.models.load_model("resources/best_models/transformers/ConvNext/model-best.h5",custom_objects={'f1_m': f1_m, 'LayerScale':LayerScale})
-        
+
     #elif model == 'DenseNet201':
     #    clf = tf.keras.models.load_model("resources/best_models/pret_DenseNet201/model-best.h5", custom_objects=dependencies)
     #    input = resize_img(input, (128, 128))
@@ -52,7 +52,7 @@ def classify_image(input, label, model):
 
 
 demo = gr.Interface(
-            fn=classify_image, 
+            fn=classify_image,
             inputs=[
               gr.Image(shape=(256, 256)),
               gr.Textbox(value='Apple Healthy', label='label'),
@@ -79,6 +79,3 @@ demo = gr.Interface(
 
 if __name__ == "__main__":
     demo.launch()
-
-
-

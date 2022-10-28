@@ -113,9 +113,8 @@ def main():
 
     test_set = prep_ds_input(args, test_set, args.len_test, img_size)
     for elem, label in test_set.take(1):
-        print(elem)
         img = elem[0].numpy()
-        #print(f"element shape is {elem.shape}, type is {elem.dtype}")
+        print(f"batch shape is {elem.shape}")
         print(f"image shape is {img.shape}, type: {img.dtype}")
         print(f"label shape is {label.shape} type: {label.dtype}")
 

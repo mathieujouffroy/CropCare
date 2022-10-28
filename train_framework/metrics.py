@@ -144,6 +144,7 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
     with open(args.label_map_path) as f:
         CLASS_INDEX = json.load(f)
 
+
     results = model.evaluate(x_test, y_test, verbose=0)
     logger.info(f"  Result of evaluation:")
     logger.info(f"  {results}")
@@ -155,7 +156,7 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
     y_pred = y_probs.argmax(axis=-1)
 
     logger.info(f"  Shape of y_pred:{y_pred.shape}")
-    
+
     #for img, label in zip(x_test, y_test):
     #    label = label.argmax(axis=-1)
     #    yyy = model.predict(x_test)
@@ -198,8 +199,8 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
     ax.xaxis.set_ticklabels(CLASS_INDEX.values())
     ax.yaxis.set_ticklabels(CLASS_INDEX.values())
     plt.xticks(rotation=90)
-    plt.show()
-    plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
+    #plt.show()
+    #plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
 
     # Display the visualization of the Confusion Matrix.
     if args.wandb:
@@ -218,11 +219,11 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                    model_metrics_dir, m_type)
-
-    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                    model_metrics_dir, m_type)
-
-    # MODEL INTERPRETABILITY
-    save_and_display_gradcam(args, model, m_name, x_test, 4, model_metrics_dir)
+    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                model_metrics_dir, m_type)
+#
+    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    #                model_metrics_dir, m_type)
+#
+    ## MODEL INTERPRETABILITY
+    save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)

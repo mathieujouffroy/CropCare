@@ -377,7 +377,7 @@ def Resnet50_model(args, mode):
 
 def set_model(args, model, mode):
     """ Set out models with their appropriate preprocessing functions. """
-    
+
     if model == "simple_conv":
         model = simple_conv_model(args, mode)
     elif model ==  "conv_baseline":
@@ -399,13 +399,15 @@ def set_model(args, model, mode):
     elif model == 'InceptionV3':
         model = InceptionV3
         mode = tf.keras.applications.inception_v3.preprocess_input
-    elif model == 'InceptionResNetV2':
+    elif model in ['InceptionResNetV2', 'scra_InceptionResNetV2']:
         model = InceptionResNetV2
-        mode = tf.keras.applications.inception_resnet_v2.preprocess_input
-    elif model == 'DenseNet201':
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.inception_resnet_v2.preprocess_input
+    elif model in ['DenseNet201', 'scra_DenseNet201']:
         model = DenseNet201
-        mode = tf.keras.applications.densenet.preprocess_input
-    elif model == 'EfficientNetV2B3':
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.densenet.preprocess_input
+    elif model in ['EfficientNetV2B3', 'scra_EfficientNetV2B3']:
         model = EfficientNetV2B3
         mode = None
     elif model == 'ConvNeXtSmall':
@@ -440,6 +442,12 @@ def prepare_model(args, model, mode, t_type, weights):
         print(mode)
         return model
 
+    elif t_type == 'scratch':
+        inputs = tfl.Input(shape=args.input_shape)
+        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
+        outputs = model(input_tensor=x, include_top=True, classes=args.n_classes, weights=None)
+        model = keras.Model(inputs, outputs)
+
     elif t_type == 'transfer':
         inputs = tfl.Input(shape=args.input_shape)
         x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
@@ -452,9 +460,9 @@ def prepare_model(args, model, mode, t_type, weights):
         x = keras.layers.GlobalAveragePooling2D()(x)
         x = keras.layers.Dropout(0.2)(x)
         outputs = keras.layers.Dense(
-            args.n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
+            args.n_classes, activation='softmax', name='predictions')(x)
         model = keras.Model(inputs, outputs)
-    
+
     elif t_type == "finetune":
         print("\nTRAINABLE LAYERS MODEL")
         args.learning_rate = 1e-5
@@ -484,7 +492,7 @@ def prepare_model(args, model, mode, t_type, weights):
         # last_hidden_states = outputs.last_hidden_state
         # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
         outputs = keras.layers.Dense(
-            args.n_classes, activation='softmax', name='predictions')(x)
+            args.n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
         # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)
