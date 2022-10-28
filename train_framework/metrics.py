@@ -65,7 +65,7 @@ def matt_coeff(y_true, y_pred):
     return numerator / (denominator + K.epsilon())
 
 
-def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
+def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     """ Plots the ROC curves for our classes. """
 
     fig, c_ax = plt.subplots(1, 1, figsize=(18, 18))
@@ -92,17 +92,14 @@ def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
     plt.savefig(f"{model_metrics_dir}/roc_curves.png")
 
     if args.wandb:
-        if m_type == "eval":
-            rc_name = "ROC_CURVES_VAL"
-        else:
-            rc_name = "ROC_CURVES_TEST"
+        rc_name = f"ROC_curves"
         wandb.run.log({rc_name: plt})
 
     roc_score = roc_auc_score(ground_truth, predictions, average='weighted')
     logger.info(f"ROC AUC: {roc_score}")
 
 
-def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
+def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     """ Plots the precision and recall curves for our classes. """
 
     fig, c_ax = plt.subplots(1, 1, figsize=(18, 18))
@@ -123,14 +120,11 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir, m_type):
     plt.savefig(f"{model_metrics_dir}/precision_recall_curves.png")
 
     if args.wandb:
-        if m_type == "eval":
-            rc_name = "PREC-RECALL_VAL"
-        else:
-            rc_name = "PREC-RECALL_TEST"
+        rc_name = f"Precision_recall_curves"
         wandb.run.log({rc_name: plt})
 
 
-def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
+def compute_training_metrics(args, model, m_name, test_dataset):
     """ Compute training metrics for model evaluation. """
 
     model_metrics_dir = os.path.join(args.output_dir, f"{m_name}_metrics")
@@ -207,23 +201,19 @@ def compute_training_metrics(args, model, m_name, test_dataset, m_type='train'):
         columns = ['classes', 'precision', 'f1_score', 'support']
         cr_df = cr_df.reset_index()
         cr_wd = wandb.Table(columns=columns, data=cr_df)
-        if m_type == 'eval':
-            cm_name = "CONFUSION_MATRIX_TEST"
-            cr_name = "CLASSIFICATION_REPORT_TEST"
-        else:
-            cm_name = "CONFUSION_MATRIX_VAL"
-            cr_name = "CLASSIFICATION_REPORT_VALID"
+        cm_name = f"Confusion_matrix"
+        cr_name = f"{m_name}_Classification_report"
         wandb.run.log({cr_name: cr_wd})
         wandb.run.log({cm_name: wandb.Image(fig)})
-        wandb.run.log({"conf_mat_val": wandb.plot.confusion_matrix(
+        wandb.run.log({f"{m_name}_conf_mat_val": wandb.plot.confusion_matrix(
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
 
-    #plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-    #                model_metrics_dir, m_type)
+    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                    model_metrics_dir)
 #
-    #plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-    #                model_metrics_dir, m_type)
+    plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+                    model_metrics_dir)
 #
     ## MODEL INTERPRETABILITY
     save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)

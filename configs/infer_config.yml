@@ -1,6 +1,4 @@
-#
-# YAML configuration file for infer.py
-#
+# YAML configuration file for run_inference.py
 
 # the random seed, for reproducibility (set to null for no random seed)
 seed: 42
@@ -8,22 +6,20 @@ seed: 42
 # the size of each batch of images when performing prediction
 batch_size: 32
 
-wandb: False
+wandb: True
 
-
-models: ['pret_EfficientNetV2B3']
-#, 'InceptionResNetV2', 'DenseNet201', 'ResNet50V2', 'pret_ResNet50V2', 'pret_DenseNet201', 'pret_EfficientNetV2B3']
 
 class_type: 'disease'
 
 transformer: False
 
 # the path to the directory of the dataset
+#dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
 dataset: 'resources/datasets/cnn/test_augm_disease_380_ds_128.h5'
-#augm_disease_60343_ds_128.h5
 
 # the path to the root directory used to store experiments
 xp_dir: 'resources/best_models/cnn'
 #xp_dir: 'resources/best_models/transformers'
 
-output_dir: 'inference/best_models'
+#output_dir: 'inference/eval_best_models'
+output_dir: 'inference/test'

@@ -399,15 +399,15 @@ def set_model(args, model, mode):
     elif model == 'InceptionV3':
         model = InceptionV3
         mode = tf.keras.applications.inception_v3.preprocess_input
-    elif model in ['InceptionResNetV2', 'scra_InceptionResNetV2']:
+    elif model == 'InceptionResNetV2':
         model = InceptionResNetV2
         if mode == 'keras_imgnet':
             mode = tf.keras.applications.inception_resnet_v2.preprocess_input
-    elif model in ['DenseNet201', 'scra_DenseNet201']:
+    elif model == 'DenseNet201':
         model = DenseNet201
         if mode == 'keras_imgnet':
             mode = tf.keras.applications.densenet.preprocess_input
-    elif model in ['EfficientNetV2B3', 'scra_EfficientNetV2B3']:
+    elif model == 'EfficientNetV2B3':
         model = EfficientNetV2B3
         mode = None
     elif model == 'ConvNeXtSmall':
@@ -441,12 +441,6 @@ def prepare_model(args, model, mode, t_type, weights):
         print(model)
         print(mode)
         return model
-
-    elif t_type == 'scratch':
-        inputs = tfl.Input(shape=args.input_shape)
-        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
-        outputs = model(input_tensor=x, include_top=True, classes=args.n_classes, weights=None)
-        model = keras.Model(inputs, outputs)
 
     elif t_type == 'transfer':
         inputs = tfl.Input(shape=args.input_shape)

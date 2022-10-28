@@ -41,11 +41,9 @@ def set_logging(args, type="train"):
         file_name = f"RUN_{date}.log"
     elif type == 'infer':
         file_name = f"INFER_{date}.log"
-    
-    if type == 'train':
-        log_dir = os.path.join(args.output_dir, file_name)
-    else:
-        log_dir = file_name
+
+    log_dir = os.path.join(args.output_dir, file_name)
+
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s", datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO,
@@ -93,7 +91,7 @@ def wandb_cfg(args, n_training_steps):
 
 def set_wandb_project_run(args, run_name):
     """ Initialize wandb directory to keep track of our models. """
-    
+
     dir_name = args.output_dir.split('/')[-1]
     project_name = f"cropdis-{dir_name}"
     cfg = wandb_cfg(args, args.n_training_steps)

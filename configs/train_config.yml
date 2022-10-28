@@ -44,7 +44,7 @@ overwrite_output_dir: True
 dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
 fe_dataset: 'resources/datasets/transformers_ds_224/vit'
 # Output directory where the model checkpoints will be written
-output_dir: 'experiments/comp-top-k'  # -> all augmented
+output_dir: 'experiments/final'  # -> all augmented
 
 mean_arr: [118.94, 124.72, 104.59]
 std_arr: [49.35, 42.97, 54.13]

@@ -57,8 +57,8 @@ def main():
         else:
             if args.polyloss:
                 args.loss = poly1_cross_entropy_label_smooth
-            else:
-                args.loss = tf.keras.losses.CategoricalCrossentropy()
+            #else:
+            #    args.loss = tf.keras.losses.CategoricalCrossentropy()
             args.metrics = [
                 tf.keras.metrics.CategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top-5-accuracy"),

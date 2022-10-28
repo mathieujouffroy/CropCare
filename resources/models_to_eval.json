@@ -6,10 +6,6 @@
     "lab_two_path_inception_v3":{"mode":"sample_wise_scaling", "t_type":null},
     "lab_two_path_inceptionresnet_v2":{"mode":"sample_wise_scaling", "t_type":null},
 
-    "scra_InceptionResNetV2": {"mode": "sample_wise_scaling","t_type": "scratch"},
-    "scra_DenseNet201": {"mode": "scale_std", "t_type": "scratch"},
-    "scra_EfficientNetV2B3": {"mode": null, "t_type": "scratch"},
-
     "VGG16":{"mode":"keras_imgnet", "t_type":"transfer"},
     "ResNet50V2":{"mode":"keras_imgnet", "t_type":"transfer"},
     "InceptionV3":{"mode":"keras_imgnet", "t_type":"transfer"},

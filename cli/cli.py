@@ -3,34 +3,39 @@ import json
 import wandb
 import random
 import numpy as np
-from cli_utils import bcolors, strawb, animate
+from cli_utils import bcolors, strawb
 from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
 from leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
 
-def get_imgs_table(test_x, test_y, nbr_imgs):
+
+def get_sample_dict(test_x, test_y, nbr_imgs):
     img_dict = dict()
     for img, label in zip(test_x, test_y):
         if label not in img_dict.keys():
             img_dict[label] = []
         img_dict[label].append(img)
+    for k, v in img_dict.items():
+        img_dict[k] = random.sample(v, nbr_imgs)
+    return img_dict
 
+
+def get_imgs_table(img_dict):
     imgs_table = []
     i = 0
     with open("../resources/label_maps/diseases_label_map.json") as f:
         CLASS_INDEX = json.load(f)
-    for unique_class, img_lst in img_dict.items():
-        sample = random.sample(img_lst, nbr_imgs)
-        for img in sample:
-            class_name = CLASS_INDEX[str(unique_class)]
+    for label, img_lst in img_dict.items():
+        for img in img_lst:
+            class_name = CLASS_INDEX[str(label)]
             imgs_table.append([i, class_name, wandb.Image(img)])
             i += 1
 
     return imgs_table
 
 
-def viz_dataset_wandb(test_x, test_y, nbr_imgs, name):
-    imgs_table = get_imgs_table(test_x, test_y, nbr_imgs)
+def viz_dataset_wandb(img_dict, name):
+    imgs_table = get_imgs_table(img_dict)
     # Initialize a new W&B run
     run = wandb.init(project='cropdis_vis', reinit=True)
     # Intialize a W&B Artifacts
@@ -92,8 +97,10 @@ def get_split_sets(seed, class_type, images, labels):
 
 
 def dump_training_stats(X_train, label_type, prefix):
-    X_train_mean_rgb = np.round(np.mean(X_train, axis=tuple(range(X_train.ndim-1))), 3)
-    X_train_std_rgb = np.round(np.std(X_train, axis=tuple(range(X_train.ndim-1))), 3)
+    X_train_mean_rgb = np.round(
+        np.mean(X_train, axis=tuple(range(X_train.ndim-1))), 3)
+    X_train_std_rgb = np.round(
+        np.std(X_train, axis=tuple(range(X_train.ndim-1))), 3)
     train_stats = {
         'X_train_mean_rgb': X_train_mean_rgb.tolist(),
         'X_train_std_rgb': X_train_std_rgb.tolist()
@@ -115,23 +122,26 @@ def main():
 
         print(
             f"{bcolors.UNDERLINE}type q or quit to exit the program{bcolors.ENDC}\n")
-        label_type = input(f'Enter the label type: plant, disease, healthy, gen_disease\n').lower()
+        label_type = input(
+            f'Enter the label type: plant, disease, healthy, gen_disease\n').lower()
         assert label_type in ['plant', 'disease', 'healthy', 'gen_disease']
         images, labels = plant_data.get_relevant_images_labels(label_type)
         raw_images = resize_images(images, (128, 128))
         X_splits, y_splits = get_split_sets(42, label_type, raw_images, labels)
         X_train, X_valid, X_test = X_splits
         y_train, y_valid, y_test = y_splits
-        viz_dataset_wandb(X_test, y_test, 5, 'test_ds')
+        img_dict = get_sample_dict(X_test, y_test, 5,)
+        viz_dataset_wandb(img_dict, 'test_ds')
         # Get stats from training set for data preprocessing
-        #dump_training_stats(X_train, label_type, prefix='augm_')
+        dump_training_stats(X_train, label_type, prefix='augm_')
         store_hdf5(f"../resources/datasets/augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
         # CREATE TRANSFORMER DATASET
         create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
         try:
             while not False:
 
-                options = input(f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
+                options = input(
+                    f"""{bcolors.OKBLUE}[0]{bcolors.ENDC} -- Visualization of your farm\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Generate Segmented Leaves HSV Mask + dist transform\n{bcolors.OKBLUE}[q]{bcolors.ENDC} -- Quit\n""")
 
                 if options.lower() in quit_lst:
                     print("Bye !")
@@ -151,18 +161,40 @@ def main():
                         X_train_seg = segment_split_set(X_train, p_option)
                         X_val_seg = segment_split_set(X_valid, p_option)
                         X_test_seg = segment_split_set(X_test, p_option)
+                        seg_dict = dict()
+                        for k, v in img_dict.items():
+                            seg_dict[k] = segment_split_set(v, p_option)
+                        if p_option == '1':
+                            name = "segm_test_ds_contrast"
+                        elif p_option == '2':
+                            name = "segm_test_ds_bc"
+                        else:
+                            name = "segm_test_ds"
                     else:
                         print('Invalid option')
                         continue
 
                 if options == '2':
+                    img_dict = get_sample_dict(X_test, y_test, 5,)
                     print('Leag Segmentation HSV mask + dist transform')
                     p_option = input(
                         f"""Chose Image adjustments (brightness, contrast):\n{bcolors.OKBLUE}[0]{bcolors.ENDC} -- No Adjustments\n{bcolors.OKBLUE}[1]{bcolors.ENDC} -- Adjust Contrast\n{bcolors.OKBLUE}[2]{bcolors.ENDC} -- Adjust Lightness and Contrast\n""")
                     if p_option in ['0', '1', '2']:
-                        X_train_seg = segment_split_set(X_train, p_option, dist=True)
-                        X_val_seg = segment_split_set(X_valid, p_option, dist=True)
-                        X_test_seg = segment_split_set(X_test, p_option, dist=True)
+                        X_train_seg = segment_split_set(
+                            X_train, p_option, dist=True)
+                        X_val_seg = segment_split_set(
+                            X_valid, p_option, dist=True)
+                        X_test_seg = segment_split_set(
+                            X_test, p_option, dist=True)
+                        seg_dict = dict()
+                        for k, v in img_dict.items():
+                            seg_dict[k] = segment_split_set(v, p_option)
+                        if p_option == '1':
+                            name = "segm_test_ds_contrast"
+                        elif p_option == '2':
+                            name = "segm_test_ds_bc"
+                        else:
+                            name = "segm_test_ds"
                     else:
                         print('Invalid option')
                         continue
@@ -171,7 +203,7 @@ def main():
                     dataset_name = f"../resources/datasets/segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
                     # Get stats from training set for data preprocessing
                     dump_training_stats(X_train_seg, label_type, prefix='segm_')
-                    viz_dataset_wandb(X_test_seg, y_test, 5, 'segm_test_ds')
+                    viz_dataset_wandb(seg_dict, name)
                     store_hdf5(dataset_name,  X_train_seg, X_val_seg, X_test_seg, y_train, y_valid, y_test)
 
         except EOFError:  # for ctrl + c

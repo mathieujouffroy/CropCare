@@ -168,13 +168,16 @@ def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast
 
     new_img = rgb_img.copy()
 
-    if cast: new_img = color_cast_removal(new_img)
-    if contrast: new_img = adjust_contrast(new_img)
-    if lightness: new_img = adjust_lightness(new_img)
+    if cast:
+        new_img = color_cast_removal(new_img)
+    if contrast:
+        new_img = adjust_contrast(new_img)
+    if lightness:
+        new_img = adjust_lightness(new_img)
 
     final_mask, result, disease_result = color_mask(
-      new_img, ls1=17, ls2=60)
-     #new_img, ls1=17, ls2=60, type=2) 
+        new_img, ls1=17, ls2=60)
+    #new_img, ls1=17, ls2=60, type=2)
 
     # if image is not of white majority -> remove whites on leaves
     if white:
@@ -183,9 +186,8 @@ def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast
     if dist:
         dist_transf = distance_transform_fb(rgb_img, final_mask)
 
-
     final_mask, no_back_img = fill_object(rgb_img, final_mask)
-    
+
     if verbose:
         imgs = [rgb_img, new_img, result,
                 disease_result, final_mask, no_back_img]
@@ -195,10 +197,11 @@ def back_segmentation(rgb_img, white=True, dist=False, lightness=False, contrast
             imgs.append(dist_transf)
             titles.append('dist transf (optional)')
         plot_multiple_img(imgs, True, titles=titles, subtitle=subtitle)
-    
+
     if dist:
         no_back_img = dist_transf
     return no_back_img
+
 
 def remove_background(rgb_img, p_type, dist=False, morphs=False, adapt_th=False, verbose=False):
     """
@@ -222,24 +225,22 @@ def remove_background(rgb_img, p_type, dist=False, morphs=False, adapt_th=False,
         adaptive_thresh_and_canny(image_gray)
 
     if p_type == 0:
-        print("----- ORIGINAL -----")
-        no_back_img = back_segmentation(rgb_img,  dist=dist, verbose=vb, subtitle='ORIGINAL')
+        no_back_img = back_segmentation(
+            rgb_img,  dist=dist, verbose=vb, subtitle='ORIGINAL')
     elif p_type == 1:
-        print("----- CONTRASTED -----")
         no_back_img = back_segmentation(
             rgb_img, dist=dist, contrast=True, verbose=vb, subtitle='CONTRASTED')
     elif p_type == 2:
-        print("----- CONTRAST & LIGHTNESS ADJUSTED -----")
         no_back_img = back_segmentation(
             rgb_img, dist=dist, lightness=True, contrast=True, verbose=vb, subtitle='CONTRAST & LIGHTNESS ADJUSTED')
     return no_back_img
 
+
 def segment_split_set(img_arr, p_option, dist=False):
     seg_imgs = []
     for img in img_arr:
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_noback = remove_background(
-            rgb_img, p_type=int(p_option), dist=dist)#, verbose=True)
+            img, p_type=int(p_option), dist=dist)
         seg_imgs.append(img_noback)
     seg_imgs = np.array(seg_imgs)
     return seg_imgs

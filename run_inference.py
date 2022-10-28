@@ -23,14 +23,13 @@ def evaluate_models(args, model_dict, test_dataset):
     Evaluate the models on the test dataset.
     """
 
-    for name, model in model_dict.items():
-        args.model_dir = os.path.join(args.output_dir, f"{name}")
+    for m_name, model in model_dict.items():
+        args.model_dir = os.path.join(args.output_dir, f"{m_name}")
         print(args.model_dir)
-        print(name)
+        print(m_name)
         if args.wandb:
             dir_name = args.output_dir.split('/')[-1]
             project_name = f"cropdis-{dir_name}"
-            MODEL_NAME = name
             cfg = {
                 "dataset": args.dataset,
                 "nbr_classes": args.n_classes,
@@ -40,15 +39,14 @@ def evaluate_models(args, model_dict, test_dataset):
                 "batch_size": args.batch_size,
                 "nbr_test_batches": args.nbr_test_batch,
             }
-            print(MODEL_NAME)
             run = wandb.init(project=project_name,
-                         job_type="infer", name=MODEL_NAME, config=cfg, reinit=True)
+                         job_type="infer", name=m_name, config=cfg, reinit=True)
             #wandb.init() returns a run object, and you can also access the run object via wandb.run:
             assert run is wandb.run
 
         logger.info("\n")
-        logger.info(f"  ***** Evaluating {name} Validation set *****")
-        compute_training_metrics(args, model, name, test_dataset, m_type='eval_test')
+        logger.info(f"  ***** Evaluating {m_name} Validation set *****")
+        compute_training_metrics(args, model, m_name, test_dataset)
 
 
         if args.wandb:
