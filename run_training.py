@@ -184,7 +184,7 @@ def main():
             args.len_test = len(X_test)
 
             if args.transformer:
-                img_size = (224, 224)
+                img_size = args.transformers_input_shape[0:2]
                 test_set = load_from_disk(f'{args.fe_dataset}/test')
                 data_collator = DefaultDataCollator(return_tensors="tf")
                 print(test_set.features["labels"].names)
@@ -195,7 +195,7 @@ def main():
                             batch_size=32,
                             collate_fn=data_collator)
             else:
-                img_size = (128, 128)
+                img_size = args.input_shape[0:2]
                 test_set = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
             test_set = prep_ds_input(args, test_set, args.len_test, img_size)

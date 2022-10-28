@@ -6,8 +6,11 @@ seed: 42
 # the size of each batch of images when performing prediction
 batch_size: 32
 
-wandb: True
+# Images shape
+input_shape: [128, 128, 3]
+transformers_input_shape: [224, 224, 3]
 
+wandb: True
 
 class_type: 'disease'
 

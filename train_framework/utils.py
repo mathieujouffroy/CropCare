@@ -42,6 +42,9 @@ def set_logging(args, type="train"):
     elif type == 'infer':
         file_name = f"INFER_{date}.log"
 
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
     log_dir = os.path.join(args.output_dir, file_name)
 
     logging.basicConfig(

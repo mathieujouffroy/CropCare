@@ -4,8 +4,8 @@
 seed: 42
 
 # Images shape
-input_shape: !!python/tuple [128, 128, 3]
-transformers_input_shape: !!python/tuple [224, 224, 3]
+input_shape: [128, 128, 3]
+transformers_input_shape: [224, 224, 3]
 
 # the type of classification we want to implement
 # ['disease', 'plant', 'healthy', 'gen_disease']
@@ -29,9 +29,7 @@ polyloss: False
 # Option to compute advanced metrics while training multiple models
 eval_during_training: False
 # Models to train
-models: ["pret_EfficientNetV2B3", "InceptionResNetV2"]
-#, "ResNet50V2","InceptionV3","DenseNet201", "EfficientNetV2B3", "pret_ResNet50V2","pret_DenseNet201","pret_EfficientNetV2B3"]
-#"LAB_2path_InceptionV3", "LAB_2path_InceptionResNetV2",
+models: ["EfficientNetV2B3", "InceptionResNetV2", "DenseNet201", "ResNet50V2"]
 
 # Option to print all warnings related to data processing
 verbose: True
