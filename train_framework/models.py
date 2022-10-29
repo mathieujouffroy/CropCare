@@ -7,8 +7,8 @@ from tensorflow import keras
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.initializers import glorot_uniform, random_uniform
 from tensorflow.keras.applications import (
-		VGG16, DenseNet201, ConvNeXtBase, ConvNeXtSmall, EfficientNetB3, EfficientNetV2B3,
-		EfficientNetV2M, EfficientNetV2S, InceptionResNetV2, InceptionV3, ResNet50, ResNet50V2, DenseNet201
+		VGG16, DenseNet201, ConvNeXtBase, ConvNeXtSmall, EfficientNetV2B3,
+		InceptionResNetV2, InceptionV3, ResNet50V2, DenseNet201, Xception
 	)
 from transformers import (
 		TFConvNextForImageClassification, TFConvNextModel, TFSwinForImageClassification, TFSwinModel,
@@ -399,14 +399,15 @@ def set_model(args, model, mode):
     elif model == 'InceptionV3':
         model = InceptionV3
         mode = tf.keras.applications.inception_v3.preprocess_input
+    elif model == 'Xception':
+        model = Xception
+        mode = tf.keras.applications.xception.preprocess_input
     elif model == 'InceptionResNetV2':
         model = InceptionResNetV2
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.inception_resnet_v2.preprocess_input
+        mode = tf.keras.applications.inception_resnet_v2.preprocess_input
     elif model == 'DenseNet201':
         model = DenseNet201
-        if mode == 'keras_imgnet':
-            mode = tf.keras.applications.densenet.preprocess_input
+        mode = tf.keras.applications.densenet.preprocess_input
     elif model == 'EfficientNetV2B3':
         model = EfficientNetV2B3
         mode = None
@@ -463,6 +464,11 @@ def prepare_model(args, model, mode, t_type, weights):
         args.n_epochs /= 2
         print_trainable_layers(model)
         base_model = get_nested_base_model(model)
+        # Unfreeze the base_model. Note that it keeps running in inference mode
+        # since we passed `training=False` when calling it. This means that
+        # the batchnorm layers will not update their batch statistics.
+        # This prevents the batchnorm layers from undoing all the training
+        # we've done so far.
         print("\nTRAINABLE LAYERS BASE MODEL ")
         # Finetune : unfreeze (all or part of) the base model and train the entire model end-to-end with a low learning rate.
         base_model.trainable = True

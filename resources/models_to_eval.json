@@ -8,6 +8,7 @@
 
     "VGG16":{"mode":"keras_imgnet", "t_type":"transfer"},
     "ResNet50V2":{"mode":"keras_imgnet", "t_type":"transfer"},
+    "Xception": {"mode": "keras_imgnet","t_type": "transfer"},
     "InceptionV3":{"mode":"keras_imgnet", "t_type":"transfer"},
     "InceptionResNetV2":{"mode":"keras_imgnet", "t_type":"transfer"},
     "DenseNet201":{"mode":"keras_imgnet", "t_type":"transfer"},
