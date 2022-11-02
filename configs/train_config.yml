@@ -29,7 +29,7 @@ polyloss: False
 # Option to compute advanced metrics while training multiple models
 eval_during_training: False
 # Models to train
-# LAB 2080 !!! + MY_RESNET50
+# LAB 2080
 models: ["EfficientNetV2B3", "InceptionResNetV2", "DenseNet201", "ResNet50V2"]
 
 # Option to print all warnings related to data processing

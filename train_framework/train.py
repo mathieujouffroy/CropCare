@@ -77,7 +77,7 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         #    num_training_steps=args.n_training_steps,
         #)
         optimizer, lr_schedule = create_optimizer(
-        init_lr=2e-5,
+        init_lr=3e-5,
         num_train_steps=args.n_training_steps,
         weight_decay_rate=0.01,
         num_warmup_steps=0,

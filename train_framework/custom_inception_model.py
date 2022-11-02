@@ -71,9 +71,9 @@ def conv2d_bn(x,
   return x
 
 
-def lab_two_path_inception_v3(args, mode, 
-                              l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
-                              ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
+def lab_two_path_inception_v3(args, mode,
+                              l_ratio=0.2,  # 0.5 #l_ratio in [0.2, 0.5]:
+                              ab_ratio=0.8,  # 0.5  # ab_ration = 1 - l_ratio
                               model_name='two_path_inception_v3'):
     """
     Instantiates the Inception v3 architecture with 2 paths options.
@@ -117,7 +117,7 @@ def lab_two_path_inception_v3(args, mode,
                           name='lab_3x3ababab')
     ab_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_ab')(ab_branch)
-    
+
     x = tfl.Concatenate(axis=channel_axis,
                         name='concat_first_block_lab')([l_branch, ab_branch])
     x = conv2d_bn(x, 80, 1, 1, padding='valid',  name='concat_1x1')
@@ -353,8 +353,8 @@ def inception_resnet_block(x, scale, block_type, block_idx, activation="relu"):
 
 
 def lab_two_path_inceptionresnet_v2(args, mode,
-                              l_ratio=0.5,  # 0.2 #l_ratio in [0.2, 0.5]:
-                              ab_ratio=0.5,  # 0.8  # ab_ration = 1 - l_ratio
+                              l_ratio=0.2,  # 0.5 #l_ratio in [0.2, 0.5]:
+                              ab_ratio=0.8,  # 0.5  # ab_ration = 1 - l_ratio
                               model_name='two_path_inception_v3'):
     """
     Instantiates the Inception v3 architecture with 2 paths options.
@@ -398,13 +398,13 @@ def lab_two_path_inceptionresnet_v2(args, mode,
                           name='lab_3x3ababab')
     ab_branch = tfl.MaxPooling2D(
         (3, 3), strides=(2, 2), name='lab_max_ab')(ab_branch)
-    
+
     x = tfl.Concatenate(axis=channel_axis,
                         name='concat_first_block_lab')([l_branch, ab_branch])
     x = conv2d_bn_ir(x, 80, 1, padding='valid',  name='concat_1x1')
     x = conv2d_bn_ir(x, 192, 3, padding='valid', name='concat_3x3')
     x = tfl.MaxPooling2D((3, 3), strides=(2, 2), name='concat_max')(x)
-    
+
     # Mixed 5b (Inception-A block): 35 x 35 x 320
     branch_0 = conv2d_bn_ir(x, 96, 1)
     branch_1 = conv2d_bn_ir(x, 48, 1)
@@ -467,7 +467,7 @@ def lab_two_path_inceptionresnet_v2(args, mode,
     # Final convolution block: 8 x 8 x 1536
     x = conv2d_bn_ir(x, 1536, 1, name='last_conv')
 
-    
+
     # Classification block
     x = tfl.GlobalAveragePooling2D(name='avg_pool')(x)
     x = tfl.Dropout(0.2)(x)

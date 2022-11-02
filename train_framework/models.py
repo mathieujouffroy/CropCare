@@ -17,7 +17,13 @@ from transformers import (
 from train_framework.custom_inception_model import lab_two_path_inceptionresnet_v2, lab_two_path_inception_v3
 from train_framework.preprocess_tensor import preprocess_image
 from train_framework.interpretability import get_target_layer
+from train_framework.metrics import f1_m
 
+def unfreeze_model(model):
+    # We unfreeze the model while leaving BatchNorm layers frozen
+    for layer in model.layers:
+        if not isinstance(layer, tfl.BatchNormalization):
+            layer.trainable = True
 
 def get_nested_base_model(model):
     last_4d = get_target_layer(model)
@@ -439,8 +445,6 @@ def prepare_model(args, model, mode, t_type, weights):
     """
 
     if t_type == None:
-        print(model)
-        print(mode)
         return model
 
     elif t_type == 'transfer':
@@ -459,24 +463,16 @@ def prepare_model(args, model, mode, t_type, weights):
         model = keras.Model(inputs, outputs)
 
     elif t_type == "finetune":
-        print("\nTRAINABLE LAYERS MODEL")
         args.learning_rate = 1e-5
-        args.n_epochs /= 2
-        print_trainable_layers(model)
+        args.n_epochs //= 2
+        #print("\nTRAINABLE LAYERS MODEL")
+        #print_trainable_layers(model)
         base_model = get_nested_base_model(model)
-        # Unfreeze the base_model. Note that it keeps running in inference mode
-        # since we passed `training=False` when calling it. This means that
-        # the batchnorm layers will not update their batch statistics.
-        # This prevents the batchnorm layers from undoing all the training
-        # we've done so far.
-        print("\nTRAINABLE LAYERS BASE MODEL ")
-        # Finetune : unfreeze (all or part of) the base model and train the entire model end-to-end with a low learning rate.
-        base_model.trainable = True
-        print_trainable_layers(base_model)
-        # although the base model becomes trainable, it is still running in inference mode since we passed `training=False`
-        print("\nTRAINABLE LAYERS MODEL")
-        print_trainable_layers(base_model)
-        print(model.summary())
+        #print("\nTRAINABLE LAYERS BASE MODEL")
+        #print_trainable_layers(base_model)
+        unfreeze_model(base_model)
+        #print("\nTRAINABLE LAYERS BASE MODEL")
+        #print_trainable_layers(base_model)
 
     elif t_type == 'transformer':
         # HF -> channel first
@@ -500,7 +496,7 @@ def prepare_model(args, model, mode, t_type, weights):
     return model
 
 
-def get_models(args, we=None):
+def get_models(args):
     """
     Get the models for the training and testing.
     """
@@ -511,13 +507,18 @@ def get_models(args, we=None):
     d_subset = {key: model_d[key] for key in to_test}
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
-        model, mode = set_model(args, name, params['mode'])
-        if params['t_type'] == 'transfer':
-            weights = 'imagenet'
-        elif params['t_type'] == "finetune":
-            weights = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5")
-        else:
+        if params['t_type'] == "finetune":
             weights = None
+            mode = None
+            if name.startswith('f_'):
+                name = name[2:]
+            model = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5",custom_objects={'f1_m': f1_m})
+        else:
+            model, mode = set_model(args, name, params['mode'])
+            if params['t_type'] == 'transfer':
+                weights = 'imagenet'
+            else:
+                weights = None
         models_to_test[name] = prepare_model(args, model, mode, params['t_type'], weights)
 
     return models_to_test

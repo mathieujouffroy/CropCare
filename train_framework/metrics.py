@@ -170,7 +170,8 @@ def compute_training_metrics(args, model, m_name, test_dataset):
     print(y_pred.shape)
     print(y_test.shape)
 
-    cm = pd.DataFrame(confusion_matrix(y_test, y_pred),
+    #cm = pd.DataFrame(confusion_matrix(y_test, y_pred),
+    cm = pd.DataFrame(confusion_matrix(truth_label_names, pred_label_names),
                       index=CLASS_INDEX.values(), columns=CLASS_INDEX.values())
 
     cr = classification_report(
