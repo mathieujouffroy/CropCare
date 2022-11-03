@@ -41,15 +41,17 @@ def main():
 
     # Set relevant loss and accuracy
     if args.class_type == 'healthy':
-        #args.loss = tf.keras.losses.BinaryCrossentropy()
+        args.n_classes = 2
+        args.class_names = ['healthy', 'not_healthy']
         args.metrics = [tf.keras.metrics.CategoricalAccuracy(
             name='binary_acc', dtype=None)]
     else:
         # Set relevant loss and metrics to evaluate
         if args.transformer:
+            args.n_epochs = 6
+            args.learning_rate = 2e-5
             # one-hot encoded labels because are memory inefficient (GPU memory)
             # guarantee of OOM when you are training a language model with a vast vocabulary size, or big image dataset
-            #args.loss = tf.keras.losses.SparseCategoricalCrossentropy()
             args.metrics = [
                 tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.SparseTopKCategoricalAccuracy(5, name="top-5-accuracy")
@@ -57,8 +59,7 @@ def main():
         else:
             if args.polyloss:
                 args.loss = poly1_cross_entropy_label_smooth
-            #else:
-            #    args.loss = tf.keras.losses.CategoricalCrossentropy()
+
             args.metrics = [
                 tf.keras.metrics.CategoricalAccuracy(name='accuracy', dtype=None),
                 tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top-5-accuracy"),
@@ -66,8 +67,6 @@ def main():
                 tf.keras.metrics.AUC(name='auc'),
                 tf.keras.metrics.AUC(name='prc', curve='PR'),
                 #tf.keras.metrics.AUC(name='auc_weighted', label_weights= class_weights),
-                ##[tf.keras.metrics.Precision(class_id=i, name=f'precis_{i}') for i in range(5)],
-                ##[tf.keras.metrics.Recall(class_id=i, name=f'recall_{i}') for i in range(5)],
             ]
 
         if args.class_type == 'disease':
@@ -84,29 +83,30 @@ def main():
             id2label = json.load(f)
 
         args.class_names = [str(v) for k,v in id2label.items()]
-        logger.info(f"  Class names = {args.class_names}")
 
-    # Load the dataset
-    X_train, y_train = load_split_hdf5(args.dataset, 'train')
-    X_valid, y_valid = load_split_hdf5(args.dataset, 'valid')
-    args.len_train = len(X_train)
-    args.len_valid = len(X_valid)
+    logger.info(f"  Class names = {args.class_names}")
 
-    # Set class weights for imbalanced dataset
-    if args.class_weights:
-        class_weights = generate_class_weights(y_train, args.class_type)
-    else:
-        class_weights = None
 
     ## Create Dataset
     if args.transformer:
-        del X_train, X_valid, y_train, y_valid
-        gc.collect()
-        img_size = args.transformers_input_shape[0:2]
-        train_set = load_from_disk(f'{args.fe_dataset}/train')
-        valid_set = load_from_disk(f'{args.fe_dataset}/valid')
+        args.input_shape = [224, 224, 3]
+        img_size = (args.input_shape[0:2])
+
+        if args.feature_extractor == "vit":
+            ds_path = "../block_storage/transformers/vit"
+        elif args.feature_extractor == "swin":
+            ds_path = "../block_storage/transformers/swin"
+        elif args.feature_extractor == "convnext":
+            ds_path = "../block_storage/transformers/convnext"
+
+        train_set = load_from_disk(f'{ds_path}/train')
+        valid_set = load_from_disk(f'{ds_path}/valid')
         data_collator = DefaultDataCollator(return_tensors="tf")
-        logger.info(train_set.features["labels"].names)
+
+        y_train = train_set['labels']
+        args.len_train = train_set.num_rows
+        args.len_valid = valid_set.num_rows
+
         train_set = train_set.to_tf_dataset(
                     columns=['pixel_values'],
                     label_cols=["labels"],
@@ -119,19 +119,34 @@ def main():
                     shuffle=True,
                     batch_size=32,
                     collate_fn=data_collator)
+
     else:
+        # Load the dataset
+        assert os.path.isfile(args.dataset)
         img_size = args.input_shape[0:2]
+        X_train, y_train = load_split_hdf5(args.dataset, 'train')
+        X_valid, y_valid = load_split_hdf5(args.dataset, 'valid')
         train_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
         valid_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-        del X_train, X_valid, y_train, y_valid
+        args.len_train = len(X_train)
+        args.len_valid = len(X_valid)
+        del X_train, X_valid, y_valid
         gc.collect()
+
+    # Set class weights for imbalanced dataset
+    if args.class_weights:
+        class_weights = generate_class_weights(y_train, args.class_type)
+    else:
+        class_weights = None
+    del y_train
+    gc.collect()
 
     train_set = prep_ds_input(args, train_set, args.len_train, img_size)
     valid_set = prep_ds_input(args, valid_set, args.len_valid, img_size)
 
     for elem, label in train_set.take(1):
         img = elem[0].numpy()
-        logger.info(f"element shape is {elem.shape}, type is {elem.dtype}")
+        logger.info(f"batch shape is {elem.shape}, type is {elem.dtype}")
         logger.info(f"image shape is {img.shape}, type: {img.dtype}")
         logger.info(f"label shape is {label.shape} type: {label.dtype}")
 
@@ -184,7 +199,7 @@ def main():
             args.len_test = len(X_test)
 
             if args.transformer:
-                img_size = args.transformers_input_shape[0:2]
+                img_size = (args.input_shape[0:2])
                 test_set = load_from_disk(f'{args.fe_dataset}/test')
                 data_collator = DefaultDataCollator(return_tensors="tf")
                 print(test_set.features["labels"].names)

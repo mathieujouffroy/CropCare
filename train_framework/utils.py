@@ -117,6 +117,4 @@ def parse_args():
         config = yaml.load(f, Loader=yaml.FullLoader)
     config = YamlNamespace(config)
 
-    assert os.path.isfile(config.dataset)
-
     return config

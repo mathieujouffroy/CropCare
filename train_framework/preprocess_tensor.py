@@ -48,13 +48,10 @@ def prep_ds_input(args, ds, set_len, size):
     """ Preprocssing function that maps the relevant preprocessing steps. """
     N_CPUS = multiprocessing.cpu_count()
     if args.transformer:
-        #ds = ds.map(lambda elem, label: to_vector(
-        #            elem, label), num_parallel_calls=N_CPUS)
         ds = ds.prefetch(tf.data.AUTOTUNE)
     else:
         ds = ds.map(lambda elem, label: prep_inputs_and_labels(
                     elem, label, args.n_classes, size), num_parallel_calls=N_CPUS)
-        #ds = ds.shuffle(set_len, seed=args.seed)
         ds = ds.batch(args.batch_size).prefetch(tf.data.AUTOTUNE)
     return ds
 

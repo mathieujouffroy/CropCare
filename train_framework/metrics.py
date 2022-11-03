@@ -89,14 +89,16 @@ def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     c_ax.legend(loc='lower right')
     c_ax.set_xlabel('False Positive Rate')
     c_ax.set_ylabel('True Positive Rate')
-    plt.savefig(f"{model_metrics_dir}/roc_curves.png")
 
     if args.wandb:
         rc_name = f"ROC_curves"
-        wandb.run.log({rc_name: plt})
+        wandb.run.log({rc_name: fig})
+    else:
+        plt.savefig(f"{model_metrics_dir}/roc_curves.png")
 
     roc_score = roc_auc_score(ground_truth, predictions, average='weighted')
-    logger.info(f"ROC AUC: {roc_score}")
+    return roc_score
+
 
 
 def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
@@ -117,11 +119,12 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     c_ax.legend(loc='lower right')
     c_ax.set_xlabel('False Positive Rate')
     c_ax.set_ylabel('True Positive Rate')
-    plt.savefig(f"{model_metrics_dir}/precision_recall_curves.png")
 
     if args.wandb:
         rc_name = f"Precision_recall_curves"
-        wandb.run.log({rc_name: plt})
+        wandb.run.log({rc_name: fig})
+    else:
+        plt.savefig(f"{model_metrics_dir}/precision_recall_curves.png")
 
 
 def compute_training_metrics(args, model, m_name, test_dataset):
@@ -167,9 +170,6 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         truth_label_names = [CLASS_INDEX[str(y)] for y in y_test]
         pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
 
-    print(y_pred.shape)
-    print(y_test.shape)
-
     #cm = pd.DataFrame(confusion_matrix(y_test, y_pred),
     cm = pd.DataFrame(confusion_matrix(truth_label_names, pred_label_names),
                       index=CLASS_INDEX.values(), columns=CLASS_INDEX.values())
@@ -181,12 +181,6 @@ def compute_training_metrics(args, model, m_name, test_dataset):
     accuracy = accuracy_score(y_test, y_pred)
     f1_sc = f1_score(y_test, y_pred, average='weighted')
     matt_score = matthews_corrcoef(y_test, y_pred)
-    logger.info(f"  ======= METRICS =======")
-    logger.info(f"  accuracy = {accuracy}")
-    logger.info(f"  f1_score = {f1_sc}")
-    logger.info(f"  matthews_corrcoef = {matt_score}")
-    logger.info(f"  classification_report:\n\n{cr_df}\n\n")
-    logger.info(f"  confusion matrix:\n\n{cm}\n\n")
 
     fig, ax = plt.subplots(figsize=(16, 20))
     ax = sns.heatmap(cm, annot=True, cmap='Blues', fmt='.3g')
@@ -194,8 +188,6 @@ def compute_training_metrics(args, model, m_name, test_dataset):
     ax.xaxis.set_ticklabels(CLASS_INDEX.values())
     ax.yaxis.set_ticklabels(CLASS_INDEX.values())
     plt.xticks(rotation=90)
-    #plt.show()
-    #plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
 
     # Display the visualization of the Confusion Matrix.
     if args.wandb:
@@ -209,12 +201,22 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         wandb.run.log({f"{m_name}_conf_mat_val": wandb.plot.confusion_matrix(
             preds=y_pred, y_true=y_test,
             class_names=list(CLASS_INDEX.values()))})
+    else:
+        plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
 
-    plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
+    roc_score = plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
                     model_metrics_dir)
-#
     plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
                     model_metrics_dir)
-#
+
+    logger.info(f"  ======= METRICS =======")
+    logger.info(f"  accuracy = {accuracy}")
+    logger.info(f"  f1_score = {f1_sc}")
+    logger.info(f"  matthews_corrcoef = {matt_score}")
+    logger.info(f"  ROC AUC: {roc_score}")
+    logger.info(f"  classification_report:\n\n{cr_df}\n\n")
+    logger.info(f"  confusion matrix:\n\n{cm.head(5)}\n\n")
+
+
     ## MODEL INTERPRETABILITY
-    save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)
+    #save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)

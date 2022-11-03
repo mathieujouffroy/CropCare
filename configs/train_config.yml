@@ -5,7 +5,6 @@ seed: 42
 
 # Images shape
 input_shape: [128, 128, 3]
-transformers_input_shape: [224, 224, 3]
 
 # the type of classification we want to implement
 # ['disease', 'plant', 'healthy', 'gen_disease']
@@ -41,7 +40,8 @@ overwrite_output_dir: True
 
 # the path to the directory of the dataset
 dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
-fe_dataset: 'resources/datasets/transformers_ds_224/vit'
+feature_extractor: 'vit'
+
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/final'  # -> all augmented
 

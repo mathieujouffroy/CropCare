@@ -476,19 +476,16 @@ def prepare_model(args, model, mode, t_type, weights):
 
     elif t_type == 'transformer':
         # HF -> channel first
+        # heigh, width, n_chans -> n_chans, height, width
         input_shape = (args.input_shape[-1], args.input_shape[1], args.input_shape[0])
         print(f"input shape: {input_shape}")
         inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
         # get last layer output, retrieve hidden states
-        #vit = model.vit(inputs)[0]
-        #convnext = model.convnext(inputs)[1]
-        x = model.swin(inputs)[1]
-        # model.vit(inputs) -> outputs : TFBaseModelOutput,  [0] = last_hidden_state
-        # ouputs = model(**inputs)
-        # last_hidden_states = outputs.last_hidden_state
-        # outputs = keras.layers.Dense(n_classes, activation='softmax', name='predictions')(last_hidden_states[:, 0, :])
+        x = model.vit(inputs)[0]
+        #x = model.convnext(inputs)[1]
+        #x = model.swin(inputs)[1]
         outputs = keras.layers.Dense(
-            args.n_classes, activation='softmax', name='predictions')(x) # (convnext) / (vit[:, 0, :]) -> x[:, 0, :]
+            args.n_classes, activation='softmax', name='predictions')(x[:, 0, :]) # (convnext,swin)-> x / (vit[:, 0, :]) -> x[:, 0, :]
         # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)

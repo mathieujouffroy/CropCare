@@ -125,17 +125,20 @@ def save_and_display_gradcam(args, model, m_name, x_test, y_test, n_img, model_m
         # Superimpose the heatmap on original image
         superimposed_img = jet_heatmap * alpha + img
         superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
-        # Display Grad CAM
-        plt.imshow(superimposed_img)
-        plt.show()
-        # Save the superimposed image
-        superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")
+
         if args.wandb:
             row = [id, label, pred,
                     wandb.Image(img),
                     wandb.Image(heatmap),
                     wandb.Image(superimposed_img)]
             grad_cam_table.add_data(*row)
+        else:
+            # Display Grad CAM
+            plt.imshow(superimposed_img)
+            plt.show()
+            # Save the superimposed image
+            superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")
+
 
     if args.wandb:
         wandb.run.log({TABLE_NAME : grad_cam_table})

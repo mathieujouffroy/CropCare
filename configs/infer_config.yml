@@ -3,25 +3,20 @@
 # the random seed, for reproducibility (set to null for no random seed)
 seed: 42
 
+# the type of classification  ['disease', 'plant', 'healthy', 'gen_disease']
+class_type: 'disease'
 # the size of each batch of images when performing prediction
 batch_size: 32
-
 # Images shape
-input_shape: [128, 128, 3]
-transformers_input_shape: [224, 224, 3]
+input_shape: [224, 224, 3]
 
-wandb: True
-
-class_type: 'disease'
+wandb: False
 
 transformer: False
-
-# the path to the directory of the dataset
-#dataset: 'resources/datasets/cnn/augm_disease_60343_ds_128.h5'
-dataset: 'resources/datasets/cnn/test_augm_disease_380_ds_128.h5'
+feature_extractor: 'vit'
 
 # the path to the root directory used to store experiments
-xp_dir: 'resources/best_models/cnn'
+xp_dir: 'resources/best_models/cnn/224'
 #xp_dir: 'resources/best_models/transformers'
 
 #output_dir: 'inference/eval_best_models'
