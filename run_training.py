@@ -20,6 +20,7 @@ from train_framework.train import generate_class_weights, train_model
 
 logger = logging.getLogger(__name__)
 
+
 def main():
 
     args = parse_args()
@@ -43,6 +44,7 @@ def main():
     if args.class_type == 'healthy':
         args.n_classes = 2
         args.class_names = ['healthy', 'not_healthy']
+        args.loss = tf.keras.losses.BinaryCrossentropy()
         args.metrics = [tf.keras.metrics.CategoricalAccuracy(
             name='binary_acc', dtype=None)]
     else:
@@ -50,22 +52,30 @@ def main():
         if args.transformer:
             args.n_epochs = 6
             args.learning_rate = 2e-5
+            args.loss = tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=True)
             # one-hot encoded labels because are memory inefficient (GPU memory)
             # guarantee of OOM when you are training a language model with a vast vocabulary size, or big image dataset
             args.metrics = [
-                tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy', dtype=None),
-                tf.keras.metrics.SparseTopKCategoricalAccuracy(5, name="top-5-accuracy")
+                tf.keras.metrics.SparseCategoricalAccuracy(
+                    name='accuracy', dtype=None),
+                tf.keras.metrics.SparseTopKCategoricalAccuracy(
+                    10, name="top-10-accuracy")
             ]
         else:
             if args.polyloss:
                 args.loss = poly1_cross_entropy_label_smooth
+            else:
+                args.loss = tf.keras.losses.CategoricalCrossentropy()
 
             args.metrics = [
-                tf.keras.metrics.CategoricalAccuracy(name='accuracy', dtype=None),
-                tf.keras.metrics.TopKCategoricalAccuracy(k=5, name="top-5-accuracy"),
+                tf.keras.metrics.CategoricalAccuracy(
+                    name='accuracy', dtype=None),
                 f1_m, tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
                 tf.keras.metrics.AUC(name='auc'),
                 tf.keras.metrics.AUC(name='prc', curve='PR'),
+                tf.keras.metrics.TopKCategoricalAccuracy(
+                    k=5, name="top-5-accuracy"),
                 #tf.keras.metrics.AUC(name='auc_weighted', label_weights= class_weights),
             ]
 
@@ -82,10 +92,9 @@ def main():
         with open(args.label_map_path) as f:
             id2label = json.load(f)
 
-        args.class_names = [str(v) for k,v in id2label.items()]
+        args.class_names = [str(v) for k, v in id2label.items()]
 
     logger.info(f"  Class names = {args.class_names}")
-
 
     ## Create Dataset
     if args.transformer:
@@ -108,17 +117,17 @@ def main():
         args.len_valid = valid_set.num_rows
 
         train_set = train_set.to_tf_dataset(
-                    columns=['pixel_values'],
-                    label_cols=["labels"],
-                    shuffle=True,
-                    batch_size=32,
-                    collate_fn=data_collator)
+            columns=['pixel_values'],
+            label_cols=["labels"],
+            shuffle=True,
+            batch_size=32,
+            collate_fn=data_collator)
         valid_set = valid_set.to_tf_dataset(
-                    columns=['pixel_values'],
-                    label_cols=["labels"],
-                    shuffle=True,
-                    batch_size=32,
-                    collate_fn=data_collator)
+            columns=['pixel_values'],
+            label_cols=["labels"],
+            shuffle=True,
+            batch_size=32,
+            collate_fn=data_collator)
 
     else:
         # Load the dataset
@@ -190,35 +199,34 @@ def main():
         if args.wandb:
             set_wandb_project_run(args, m_name)
 
-        trained_model = train_model(args, m_name, model, train_set, valid_set, class_weights)
+        trained_model = train_model(
+            args, m_name, model, train_set, valid_set, class_weights)
 
         if args.eval_during_training:
-            X_test, y_test = load_split_hdf5(args.dataset, 'test')
-
-            # Set parameters
-            args.len_test = len(X_test)
-
             if args.transformer:
-                img_size = (args.input_shape[0:2])
-                test_set = load_from_disk(f'{args.fe_dataset}/test')
+                args.input_shape = (3, 224, 224)
+                test_set = load_from_disk(f'{ds_path}/test')
+                args.len_test = test_set.num_rows
                 data_collator = DefaultDataCollator(return_tensors="tf")
-                print(test_set.features["labels"].names)
                 test_set = test_set.to_tf_dataset(
-                            columns=['pixel_values'],
-                            label_cols=["labels"],
-                            shuffle=True,
-                            batch_size=32,
-                            collate_fn=data_collator)
+                    columns=['pixel_values'],
+                    label_cols=["labels"],
+                    shuffle=True,
+                    batch_size=32,
+                    collate_fn=data_collator)
             else:
-                img_size = args.input_shape[0:2]
+                X_test, y_test = load_split_hdf5(ds_path, 'test')
+                args.len_test = len(X_test)
                 test_set = tf.data.Dataset.from_tensor_slices((X_test, y_test))
-
+                del X_test, y_test
+                gc.collect()
             test_set = prep_ds_input(args, test_set, args.len_test, img_size)
             logger.info(f"\n  ***** Evaluating on Test set *****")
             compute_training_metrics(args, trained_model, m_name, test_set)
 
         if args.wandb:
             wandb.run.finish()
+
 
 if __name__ == "__main__":
     main()

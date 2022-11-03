@@ -480,7 +480,9 @@ def prepare_model(args, model, mode, t_type, weights):
         input_shape = (args.input_shape[-1], args.input_shape[1], args.input_shape[0])
         print(f"input shape: {input_shape}")
         inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
+        #p_inputs = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
         # get last layer output, retrieve hidden states
+        #x = model.vit(p_inputs)[0]
         x = model.vit(inputs)[0]
         #x = model.convnext(inputs)[1]
         #x = model.swin(inputs)[1]

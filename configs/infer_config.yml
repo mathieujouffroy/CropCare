@@ -7,17 +7,12 @@ seed: 42
 class_type: 'disease'
 # the size of each batch of images when performing prediction
 batch_size: 32
-# Images shape
-input_shape: [224, 224, 3]
 
 wandb: False
 
-transformer: False
-feature_extractor: 'vit'
-
 # the path to the root directory used to store experiments
 xp_dir: 'resources/best_models/cnn/224'
-#xp_dir: 'resources/best_models/transformers'
+#xp_dir: 'resources/best_models/transformers/vit'
 
 #output_dir: 'inference/eval_best_models'
 output_dir: 'inference/test'

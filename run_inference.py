@@ -64,6 +64,35 @@ def main():
     # SET SEED
     set_seed(args)
 
+    args.input_shape = (224, 224, 3)
+    args.transformer = False
+
+    if args.xp_dir == 'resources/best_models/cnn/128':
+        args.input_shape = (128, 128, 3)
+        ds_path = 'resources/datasets/augm_disease_60343_ds_128.h5'
+
+    elif args.xp_dir == 'resources/best_models/cnn/224':
+        ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
+
+    elif args.xp_dir == 'resources/best_models/lab/128':
+        args.input_shape = (128, 128, 3)
+        ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
+
+    elif args.xp_dir == 'resources/best_models/lab/224':
+        ds_path = 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
+
+    elif args.xp_dir == 'resources/best_models/transformers/VIT':
+        ds_path = "../block_storage/transformers/vit"
+        args.transformer = True
+
+    elif args.xp_dir == 'resources/best_models/transformers/ConvNexT':
+        ds_path = "../block_storage/transformers/convnext"
+        args.transformer = True
+
+    elif args.xp_dir == 'resources/best_models/transformers/Swin':
+        ds_path = "../block_storage/transformers/swin"
+        args.transformer = True
+
     if args.class_type == 'healthy':
         args.n_classes = 2
         args.class_names = ['healthy', 'not_healthy']
@@ -86,31 +115,10 @@ def main():
             id2label = json.load(f)
         args.class_names = [str(v) for k, v in id2label.items()]
 
-    args.input_shape = (224, 224, 3)
-
-    if args.xp_dir == 'resources/best_models/cnn/128':
-        args.input_shape = (128, 128, 3)
-        ds_path = 'resources/datasets/augm_disease_60343_ds_128.h5'
-
-    elif args.xp_dir == 'resources/best_models/cnn/224':
-        ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
-
-    elif args.xp_dir == 'resources/best_models/lab/128':
-        args.input_shape = (128, 128, 3)
-        ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
-
-    elif args.xp_dir == 'resources/best_models/lab/224':
-        ds_path = 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
 
     ## Create Dataset
     if args.transformer:
         args.input_shape = (3, 224, 224)
-        if args.feature_extractor == "vit":
-            ds_path = "../block_storage/transformers/vit"
-        elif args.feature_extractor == "swin":
-            ds_path = "../block_storage/transformers/swin"
-        elif args.feature_extractor == "convnext":
-            ds_path = "../block_storage/transformers/convnext"
 
         test_set = load_from_disk(f'{ds_path}/test')
         args.len_test = test_set.num_rows
@@ -151,16 +159,16 @@ def main():
     model_dict = dict()
     if args.transformer:
         model_dir = args.xp_dir.split('/')[-1]
+        logger.info(f"Model : {model_dir}")
         model = tf.keras.models.load_model(
             f"{args.xp_dir}/model-best.h5", custom_objects={"AdamWeightDecay": AdamWeightDecay})
         model_dict[model_dir] = model
     else:
         for model_dir in os.listdir(args.xp_dir):
             # Load the trained model saved to disk
-            print(f"Model is : {model_dir}")
+            logger.info(f"Model : {model_dir}")
 
             if os.path.isdir(f'{args.xp_dir}/{model_dir}'):
-                print(f'{args.xp_dir}/{model_dir}')
                 if model_dir == 'ConvNexT_Keras':
                     model = tf.keras.models.load_model(
                         f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects={'f1_m': f1_m, 'LayerScale': LayerScale})
