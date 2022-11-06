@@ -15,6 +15,9 @@
     "EfficientNetV2B3":{"mode":null, "t_type":"transfer"},
     "ConvNeXtSmall":{"mode":null, "t_type":"transfer"},
 
+    "sc_InceptionV3": {"mode": "sample_wise_scaling","t_type": "scratch"},
+    "sc_ResNet50V2": {"mode": "sample_wise_scaling","t_type": "scratch"},
+
     "f_EfficientNetV2B3": {"mode": null,"t_type": "finetune"},
     "f_ResNet50V2": {"mode": null,"t_type": "finetune"},
     "f_DenseNet201": {"mode": null,"t_type": "finetune"},

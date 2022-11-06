@@ -367,11 +367,11 @@ def Resnet50_model(args, mode):
     X = identity_block(X, 3, [512, 512, 2048])
     X = identity_block(X, 3, [512, 512, 2048])
 
-    X = tfl.AveragePooling2D((2, 2))(X)
+    X = tfl.GlobalAveragePooling2D(name='avg_pool')(X)
+    X = keras.layers.Dropout(0.1)(X)
 
     # output layer
     X = tfl.Flatten()(X)
-    # X = tfl.GlobalAveragePooling2D(name='avg_pool')(X)
     X = tfl.Dense(args.n_classes, activation='softmax', name='predictions',
               kernel_initializer=glorot_uniform(seed=0))(X)
 
@@ -399,12 +399,14 @@ def set_model(args, model, mode):
     elif model == 'VGG16':
         model = VGG16
         mode = tf.keras.applications.vgg16.preprocess_input
-    elif model == 'ResNet50V2':
+    elif 'ResNet50V2' in model:
         model = ResNet50V2
-        mode = tf.keras.applications.resnet_v2.preprocess_input
-    elif model == 'InceptionV3':
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.resnet_v2.preprocess_input
+    elif 'InceptionV3' in model:
         model = InceptionV3
-        mode = tf.keras.applications.inception_v3.preprocess_input
+        if mode == 'keras_imgnet':
+            mode = tf.keras.applications.inception_v3.preprocess_input
     elif model == 'Xception':
         model = Xception
         mode = tf.keras.applications.xception.preprocess_input
@@ -432,7 +434,7 @@ def set_model(args, model, mode):
     return (model, mode)
 
 
-def prepare_model(args, model, mode, t_type, weights):
+def prepare_model(args, model, mode, t_type):
     """
     Prepare the model
 
@@ -447,10 +449,22 @@ def prepare_model(args, model, mode, t_type, weights):
     if t_type == None:
         return model
 
+    elif t_type == "scratch":
+        inputs = tfl.Input(shape=args.input_shape)
+        x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
+        base_model = model(input_tensor=x, include_top=False, weights=None)
+        x = base_model(x, training=True)
+        print_trainable_layers(base_model)
+        x = keras.layers.GlobalAveragePooling2D()(x)
+        x = keras.layers.Dropout(0.2)(x)
+        outputs = keras.layers.Dense(
+            args.n_classes, activation='softmax', name='predictions')(x)
+        model = keras.Model(inputs, outputs)
+
     elif t_type == 'transfer':
         inputs = tfl.Input(shape=args.input_shape)
         x = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
-        base_model = model(input_tensor=x, include_top=False, weights=weights)
+        base_model = model(input_tensor=x, include_top=False, weights='imagenet')
         base_model.trainable = False
         # keep the BatchNormalization layers in inference mode by passing training=False
         # the batchnorm layers will not update their batch statistics.
@@ -465,13 +479,9 @@ def prepare_model(args, model, mode, t_type, weights):
     elif t_type == "finetune":
         args.learning_rate = 1e-5
         args.n_epochs //= 2
-        #print("\nTRAINABLE LAYERS MODEL")
-        #print_trainable_layers(model)
         base_model = get_nested_base_model(model)
-        #print("\nTRAINABLE LAYERS BASE MODEL")
         #print_trainable_layers(base_model)
         unfreeze_model(base_model)
-        #print("\nTRAINABLE LAYERS BASE MODEL")
         #print_trainable_layers(base_model)
 
     elif t_type == 'transformer':
@@ -514,10 +524,7 @@ def get_models(args):
             model = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5",custom_objects={'f1_m': f1_m})
         else:
             model, mode = set_model(args, name, params['mode'])
-            if params['t_type'] == 'transfer':
-                weights = 'imagenet'
-            else:
-                weights = None
-        models_to_test[name] = prepare_model(args, model, mode, params['t_type'], weights)
+
+        models_to_test[name] = prepare_model(args, model, mode, params['t_type'])
 
     return models_to_test

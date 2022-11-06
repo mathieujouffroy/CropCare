@@ -60,7 +60,7 @@ def main():
                 tf.keras.metrics.SparseCategoricalAccuracy(
                     name='accuracy', dtype=None),
                 tf.keras.metrics.SparseTopKCategoricalAccuracy(
-                    10, name="top-10-accuracy")
+                    k=5, name="top-5-accuracy")
             ]
         else:
             if args.polyloss:
@@ -71,11 +71,11 @@ def main():
             args.metrics = [
                 tf.keras.metrics.CategoricalAccuracy(
                     name='accuracy', dtype=None),
+                tf.keras.metrics.TopKCategoricalAccuracy(
+                    k=5, name="top-5-accuracy"),
                 f1_m, tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
                 tf.keras.metrics.AUC(name='auc'),
                 tf.keras.metrics.AUC(name='prc', curve='PR'),
-                tf.keras.metrics.TopKCategoricalAccuracy(
-                    k=5, name="top-5-accuracy"),
                 #tf.keras.metrics.AUC(name='auc_weighted', label_weights= class_weights),
             ]
 
@@ -121,13 +121,15 @@ def main():
             label_cols=["labels"],
             shuffle=True,
             batch_size=32,
-            collate_fn=data_collator)
+            collate_fn=data_collator
+        )
         valid_set = valid_set.to_tf_dataset(
             columns=['pixel_values'],
             label_cols=["labels"],
             shuffle=True,
             batch_size=32,
-            collate_fn=data_collator)
+            collate_fn=data_collator
+        )
 
     else:
         # Load the dataset

@@ -126,6 +126,12 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     else:
         plt.savefig(f"{model_metrics_dir}/precision_recall_curves.png")
 
+@tf.function(jit_compile=True)
+def eval_and_pred(model, test_dataset):
+    results = model.evaluate(test_dataset)
+    y_probs = model.predict(test_dataset)
+    y_preds = y_probs.argmax(axis=-1)
+    return y_preds
 
 def compute_training_metrics(args, model, m_name, test_dataset):
     """ Compute training metrics for model evaluation. """
@@ -139,12 +145,9 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         CLASS_INDEX = json.load(f)
 
     if args.transformer:
-        print(test_dataset)
-        y_probs = model.predict(test_dataset)
-        y_pred = y_probs.argmax(axis=-1)
-        print(y_probs)
-        print(y_pred)
-        results = model.evaluate(test_dataset)
+        #y_probs = model.predict(test_dataset)
+        #y_pred = y_probs.argmax(axis=-1)
+        results = eval_and_pred(model, test_dataset)
     else:
         y_test = np.concatenate([y for x, y in test_dataset], axis=0)
         x_test = np.concatenate([x for x, y in test_dataset], axis=0)
