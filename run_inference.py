@@ -4,6 +4,7 @@ import os
 import gc
 import json
 import logging
+import pandas as pd
 import tensorflow as tf
 from datasets import load_from_disk
 from transformers import DefaultDataCollator, AdamWeightDecay
@@ -28,7 +29,7 @@ def evaluate_models(args, model_dict, test_dataset):
     """
     Evaluate the models on the test dataset.
     """
-
+    score_dict = dict()
     for m_name, model in model_dict.items():
         args.model_dir = os.path.join(args.output_dir, f"{m_name}")
         if args.wandb:
@@ -50,12 +51,27 @@ def evaluate_models(args, model_dict, test_dataset):
         logger.info("\n")
         logger.info(f"  ***** Evaluating {m_name} Validation set *****")
         print(model.summary())
-        compute_training_metrics(args, model, m_name, test_dataset)
+        results, f1_sc, roc_sc = compute_training_metrics(args, model, m_name, test_dataset)
+        logger.info(f"\n  Result of evaluation:")
+        logger.info(f"  {results}")
+        logger.info(f"  loss: {results[0]}")
+        logger.info(f"  acc: {results[1]}")
+        logger.info(f"  f1: {f1_sc}")
+        score_dict[m_name] : dict({'loss':results[0], 'accuracy':results[1], 'f1':f1_sc, 'ROC':roc_sc})
+
 
         if args.wandb:
             wandb.run.finish()
-            print("\n\n--- FINISH WANDB RUN ---\n")
 
+    score_df = pd.DataFrame.from_dict(score_dict, orient='index').reset_index()
+    if args.wandb:
+        run = wandb.init(project=project_name,
+                         job_type="infer", name="all_evals", config=cfg, reinit=True)
+        #wandb.init() returns a run object, and you can also access the run object via wandb.run:
+        assert run is wandb.run
+        score_tb = wandb.Table(score_df)
+        wandb.run.log({'Evaluations': score_tb})
+        wandb.run.finish()
 
 def main():
     args = parse_args()

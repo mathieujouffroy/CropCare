@@ -148,6 +148,8 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         #y_probs = model.predict(test_dataset)
         #y_pred = y_probs.argmax(axis=-1)
         results = eval_and_pred(model, test_dataset)
+        f1_sc = None
+        roc_score = None
     else:
         y_test = np.concatenate([y for x, y in test_dataset], axis=0)
         x_test = np.concatenate([x for x, y in test_dataset], axis=0)
@@ -223,7 +225,4 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         ## MODEL INTERPRETABILITY
         #save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)
 
-    logger.info(f"\n  Result of evaluation:")
-    logger.info(f"  {results}")
-    logger.info(f"  loss: {results[0]}")
-    logger.info(f"  acc: {results[1]}")
+    return results, f1_sc, roc_score
