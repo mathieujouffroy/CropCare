@@ -122,6 +122,10 @@ def main():
         args.input_shape = (128, 128, 3)
         ds_path = 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
 
+    elif args.xp_dir == 'resources/best_models/seg':
+        args.input_shape = (128, 128, 3)
+        ds_path = 'resources/datasets/segm_disease_60343_ds_128.h5'
+
     elif args.xp_dir == 'resources/best_models/transformers/VIT':
         ds_path = "../block_storage/transformers/vit"
         args.transformer = True
