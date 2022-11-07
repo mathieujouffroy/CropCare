@@ -3,13 +3,16 @@ __pycache__/
 /*/*/__pycache__
 /**/__pycache__
 
-resources/experiments/*
-resources/datasets/cnn/*
-resources/datasets/transformers/*
+experiments/*
+inference/*
+
+resources/datasets/*
 resources/wandb/*
 resources/test_imgs/*
 resources/best_models/cnn/*
+resources/best_models/lab/*
 resources/best_models/transformers/*
+resources/best_models/keras_transformers/*
 
 .DS_Store
 .env

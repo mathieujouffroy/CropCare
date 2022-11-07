@@ -11,6 +11,10 @@ batch_size: 32
 wandb: False
 
 # the path to the root directory of our trained models
+# "resources/best_models/{model_type}" where model_type can be either of
+# 'cnn', 'lab', 'transformers', 'keras_transformers'
+# For 'transformers', evaluate models one by one
+#      -> use resources/best_models/{model_type}/{model}
 xp_dir: 'resources/best_models/keras_transformers'
 
 # the path to the root directory used to store our evaluations

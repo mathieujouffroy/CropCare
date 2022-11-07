@@ -1,6 +1,6 @@
 import tensorflow as tf
-import tensorflow.keras.layers as tfl
 import tensorflow.keras.backend as K
+import tensorflow.keras.layers as tfl
 from train_framework.preprocess_tensor import preprocess_image
 
 class CopyChannels(tfl.Layer):

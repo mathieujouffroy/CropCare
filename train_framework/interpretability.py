@@ -5,8 +5,6 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from train_framework.preprocess_tensor import preprocess_image
-
 
 def get_imgs_table(model, test_x, test_y, nbr_imgs):
     img_dict = dict()

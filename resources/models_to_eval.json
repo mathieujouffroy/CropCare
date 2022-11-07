@@ -13,6 +13,7 @@
     "InceptionResNetV2":{"mode":"keras_imgnet", "t_type":"transfer"},
     "DenseNet201":{"mode":"keras_imgnet", "t_type":"transfer"},
     "EfficientNetV2B3":{"mode":null, "t_type":"transfer"},
+    "seg_EfficientNetV2B3": {"mode": null,"t_type": "transfer"},
     "ConvNeXtSmall":{"mode":null, "t_type":"transfer"},
 
     "sc_InceptionV3": {"mode": "sample_wise_scaling","t_type": "scratch"},
@@ -21,6 +22,7 @@
     "f_EfficientNetV2B3": {"mode": null,"t_type": "finetune"},
     "f_ResNet50V2": {"mode": null,"t_type": "finetune"},
     "f_DenseNet201": {"mode": null,"t_type": "finetune"},
+    "f_seg_EfficientNetV2B": {"mode": null,"t_type": "finetune"},
 
     "TFConvNextModel":{"mode":null, "t_type":"transformer"},
     "TFViTModel":{"mode":null, "t_type":"transformer"},

@@ -1,18 +1,14 @@
 import os
-import PIL
 import cv2
 import glob
 import h5py
 import json
-import wandb
 import random
 import datasets
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.subplots as sp
-from PIL import Image
 from transformers import ViTFeatureExtractor, ConvNextFeatureExtractor, AutoFeatureExtractor, DefaultDataCollator
 
 RANDOM_SEED = 42
@@ -307,6 +303,8 @@ class PlantDataset():
             this_figure.update_layout(barmode="stack", height=600, width=1700,
                                       title_text=f"{col} distribution across dataset", showlegend=False)
             this_figure.show()
+            if not os.path.exists("../resources/metadata/"):
+                os.makedirs("../resources/metadata/")
             this_figure.write_image("../resources/metadata/ds_labels_distrib.jpeg")
 
 

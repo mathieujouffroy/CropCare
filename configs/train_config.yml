@@ -4,7 +4,7 @@
 seed: 42
 
 # Images shape
-input_shape: [224, 224, 3]
+input_shape: [128, 128, 3]
 
 # the type of classification we want to implement
 # ['disease', 'plant', 'healthy', 'gen_disease']
@@ -23,22 +23,26 @@ class_weights: True
 polyloss: False
 # Option to compute advanced metrics while training multiple models
 eval_during_training: False
-# Models to train
-models: ["lab_two_path_inception_v3", "lab_two_path_inceptionresnet_v2"]
 
 # Option to use wandb for logging
 wandb: True
 # Option to overwrite the content of the output directory
 overwrite_output_dir: True
 
-# the path to the directory of the dataset
-dataset: 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
-feature_extractor: 'vit'
+# Models to train
+models: ["seg_EfficientNetV2B3"]
+
 # Option to use pipeline for transformers
 transformer: False
+# If you are training a transformer model, apply the appropriate feature extractor
+# 'vit', 'convnext', 'swin', 'cvt'
+feature_extractor: 'vit'
+
+# the path to the directory of the dataset
+dataset: 'resources/datasets/segm_disease_60343_ds_128.h5'
 
 # Output directory where the model checkpoints will be written
-output_dir: 'experiments/cnn-comp'
+output_dir: 'experiments/fine-tune'
 
 mean_arr: [118.94, 124.72, 104.59]
 std_arr: [49.35, 42.97, 54.13]

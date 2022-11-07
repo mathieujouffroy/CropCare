@@ -4,8 +4,8 @@ import json
 import numpy as np
 import tensorflow as tf
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 from tensorflow.keras import backend as K
 from sklearn.metrics import f1_score,  accuracy_score,  matthews_corrcoef
 from sklearn.metrics import classification_report, confusion_matrix

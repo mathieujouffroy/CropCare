@@ -8,7 +8,6 @@ import tensorflow as tf
 import math
 import json
 from datasets import load_from_disk
-from transformers import create_optimizer
 from transformers import DefaultDataCollator
 from train_framework.metrics import compute_training_metrics, f1_m
 from train_framework.models import get_models

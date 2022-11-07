@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from cli.cli_utils import plot_multiple_img
 import skimage
 

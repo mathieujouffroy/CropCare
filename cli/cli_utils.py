@@ -1,7 +1,4 @@
 import matplotlib.pyplot as plt
-import sys
-import time
-import itertools
 
 
 class bcolors:

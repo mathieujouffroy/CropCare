@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 import multiprocessing
 import matplotlib.pyplot as plt

@@ -4,9 +4,9 @@ import logging
 import datetime
 import argparse
 import random
+import wandb
 import numpy as np
 import tensorflow as tf
-import wandb
 
 class bcolors:
     HEADER = '\033[95m'

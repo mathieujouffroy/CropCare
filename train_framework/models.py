@@ -7,13 +7,10 @@ from tensorflow import keras
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.initializers import glorot_uniform, random_uniform
 from tensorflow.keras.applications import (
-		VGG16, DenseNet201, ConvNeXtBase, ConvNeXtSmall, EfficientNetV2B3,
-		InceptionResNetV2, InceptionV3, ResNet50V2, DenseNet201, Xception
+		VGG16, DenseNet201, ConvNeXtSmall, EfficientNetV2B3, Xception,
+		InceptionResNetV2, InceptionV3, ResNet50V2, DenseNet201
 	)
-from transformers import (
-		TFConvNextForImageClassification, TFConvNextModel, TFSwinForImageClassification, TFSwinModel,
-    	TFViTForImageClassification, TFViTModel
-	)
+from transformers import TFConvNextModel, TFSwinModel, TFViTModel
 from train_framework.custom_inception_model import lab_two_path_inceptionresnet_v2, lab_two_path_inception_v3
 from train_framework.preprocess_tensor import preprocess_image
 from train_framework.interpretability import get_target_layer
