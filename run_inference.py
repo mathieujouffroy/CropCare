@@ -57,13 +57,24 @@ def evaluate_models(args, model_dict, test_dataset):
 
         logger.info("\n")
         logger.info(f"  ***** Evaluating {m_name} Validation set *****")
-        results, f1_sc, roc_sc = compute_training_metrics(
-            args, model, m_name, test_dataset)
+        if args.transformer:
+            print(model)
+            y_probs = model.predict(test_dataset, batch_size=32)
+            # y_probs shape is (9052, 38)
+            y_preds = y_probs.argmax(axis=-1)
+            # y_preds shape is (9052, 38)
+            results = model.evaluate(test_dataset, batch_size=32)
+            f1_sc = None
+            roc_sc = None
+        else:
+            results, f1_sc, roc_sc = compute_training_metrics(
+                args, model, m_name, test_dataset)
+
         logger.info(f"Result of evaluation:")
         logger.info(f"  {results}")
         logger.info(f"  loss: {results[0]}")
         logger.info(f"  acc: {results[1]}")
-        logger.info(f"  f1: {f1_sc}")
+
         metrics_d = dict(
             {
                 'loss': results[0],
@@ -77,7 +88,7 @@ def evaluate_models(args, model_dict, test_dataset):
             wandb.run.finish()
 
     score_df = pd.DataFrame.from_dict(score_dict, orient='index').reset_index()
-    score_df = score_df.rename(columns={'index':'model'})
+    score_df = score_df.rename(columns={'index': 'model'})
     logger.info(f"scores:\n{score_df}")
 
     if args.wandb:
@@ -189,8 +200,11 @@ def main():
     if args.transformer:
         model_dir = args.xp_dir.split('/')[-1]
         logger.info(f"Model : {model_dir}")
+        model_path = f"{args.xp_dir}/model-best.h5"
+        size = os.path.getsize(model_path)
+        logger.info(f"Model Size: {size:.2f} MB")
         model = tf.keras.models.load_model(
-            f"{args.xp_dir}/model-best.h5", custom_objects={"AdamWeightDecay": AdamWeightDecay})
+            model_path, custom_objects={"AdamWeightDecay": AdamWeightDecay})
         model_dict[model_dir] = model
     else:
         for model_dir in os.listdir(args.xp_dir):
@@ -198,15 +212,18 @@ def main():
             logger.info(f"Model : {model_dir}")
 
             if os.path.isdir(f'{args.xp_dir}/{model_dir}'):
+                model_path = f"{args.xp_dir}/{model_dir}/model-best.h5"
+                size = os.path.getsize(model_path)
+                logger.info(f"Model Size: {size:.2f} MB")
                 if model_dir == 'ConvNexTSmall':
                     model = tf.keras.models.load_model(
-                        f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects={'f1_m': f1_m, 'LayerScale': LayerScale})
+                        model_path, custom_objects={'f1_m': f1_m, 'LayerScale': LayerScale})
                 elif args.xp_dir.split('/')[-1] == "lab":
                     model = tf.keras.models.load_model(
-                        f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects={'f1_m': f1_m, 'CopyChannels': CopyChannels})
+                        model_path, custom_objects={'f1_m': f1_m, 'CopyChannels': CopyChannels})
                 else:
                     model = tf.keras.models.load_model(
-                        f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects=dependencies)
+                        model_path, custom_objects=dependencies)
                 model_dict[model_dir] = model
 
     evaluate_models(args, model_dict, test_set)

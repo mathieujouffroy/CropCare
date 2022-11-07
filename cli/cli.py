@@ -3,9 +3,9 @@ import json
 import wandb
 import random
 import numpy as np
-from cli.cli_utils import bcolors, strawb
-from cli.dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
-from cli.leaf_segmentation import segment_split_set
+from cli_utils import bcolors, strawb
+from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
+from leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
 
 
@@ -23,7 +23,7 @@ def get_sample_dict(test_x, test_y, nbr_imgs):
 def get_imgs_table(img_dict):
     imgs_table = []
     i = 0
-    with open("../resources/label_maps/diseases_label_map.json") as f:
+    with open("resources/label_maps/diseases_label_map.json") as f:
         CLASS_INDEX = json.load(f)
     for label, img_lst in img_dict.items():
         for img in img_lst:
@@ -107,7 +107,7 @@ def dump_training_stats(X_train, label_type, prefix):
     }
     print(f"X train mean : {X_train_mean_rgb}")
     print(f"X train std : {X_train_std_rgb}")
-    with open(f"{prefix}{label_type}_train_stats_128.json", "w") as outfile:
+    with open(f"resources/{prefix}_{label_type}_train_stats_128.json", "w") as outfile:
         json.dump(train_stats, outfile, indent=4)
 
 
@@ -133,8 +133,8 @@ def main():
         img_dict = get_sample_dict(X_test, y_test, 5,)
         viz_dataset_wandb(img_dict, 'test_ds')
         # Get stats from training set for data preprocessing
-        dump_training_stats(X_train, label_type, prefix='augm_')
-        store_hdf5(f"../resources/datasets/augm_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
+        dump_training_stats(X_train, label_type, prefix='augm_lab')
+        store_hdf5(f"resources/datasets/augm_lab_{label_type}_{plant_data.img_nbr}_ds_128.h5", X_train, X_valid, X_test, y_train, y_valid, y_test)
         # CREATE TRANSFORMER DATASET
         create_transformer_ds(label_type, X_train, X_valid, X_test, y_train, y_valid, y_test)
         try:
@@ -200,7 +200,7 @@ def main():
                         continue
 
                 if options in ['1', '2']:
-                    dataset_name = f"../resources/datasets/segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
+                    dataset_name = f"resources/datasets/segm_{label_type}_{plant_data.img_nbr}_ds_128.h5"
                     # Get stats from training set for data preprocessing
                     dump_training_stats(X_train_seg, label_type, prefix='segm_')
                     viz_dataset_wandb(seg_dict, name)

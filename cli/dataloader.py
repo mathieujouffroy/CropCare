@@ -293,14 +293,14 @@ class PlantDataset():
                 figure2_traces.append(figure2["data"][trace])
 
             this_figure = sp.make_subplots(
-                rows=1, cols=2, specs=[[{"type": "pie"}, {"type": "xy"}]])
+                rows=1, cols=2, specs=[{"type": "pie"}, {"type": "xy"}])
 
             for traces in figure1_traces:
                 this_figure.append_trace(traces, row=1, col=1)
             for traces in figure2_traces:
                 this_figure.append_trace(traces, row=1, col=2)
 
-            this_figure.update_layout(barmode="stack", height=600, width=1700,
+            this_figure.update_layout(barmode="stack", height=2000, width=1500,
                                       title_text=f"{col} distribution across dataset", showlegend=False)
             this_figure.show()
             if not os.path.exists("../resources/metadata/"):

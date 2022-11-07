@@ -80,7 +80,10 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         elif args.optimizer == 'adam':
             optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
 
-    model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
+    if args.transformer:
+        model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics, jit_compile=True)
+    else:
+        model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
     checks_path = os.path.join(args.model_dir, 'best-checkpoint')
