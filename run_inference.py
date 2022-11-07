@@ -31,9 +31,16 @@ def evaluate_models(args, model_dict, test_dataset):
     """
     score_dict = dict()
     for m_name, model in model_dict.items():
-        args.model_dir = os.path.join(args.output_dir, f"{m_name}")
+        if args.transformer:
+            args.model_dir = args.output_dir
+        else:
+            args.model_dir = os.path.join(args.output_dir, f"{m_name}")
+            if not os.path.exists(args.model_dir):
+                os.makedirs(args.model_dir)
+
         if args.wandb:
-            dir_name = args.output_dir.split('/')[-1]
+            dir_name = args.output_dir.split('/')[1]
+            m_type = args.output_dir.split('/')[2]
             project_name = f"cropdis-{dir_name}"
             cfg = {
                 "nbr_classes": args.n_classes,
@@ -50,32 +57,42 @@ def evaluate_models(args, model_dict, test_dataset):
 
         logger.info("\n")
         logger.info(f"  ***** Evaluating {m_name} Validation set *****")
-        print(model.summary())
-        results, f1_sc, roc_sc = compute_training_metrics(args, model, m_name, test_dataset)
-        logger.info(f"\n  Result of evaluation:")
+        results, f1_sc, roc_sc = compute_training_metrics(
+            args, model, m_name, test_dataset)
+        logger.info(f"Result of evaluation:")
         logger.info(f"  {results}")
         logger.info(f"  loss: {results[0]}")
         logger.info(f"  acc: {results[1]}")
         logger.info(f"  f1: {f1_sc}")
-        score_dict[m_name] : dict({'loss':results[0], 'accuracy':results[1], 'f1':f1_sc, 'ROC':roc_sc})
-
-
+        metrics_d = dict(
+            {
+                'loss': results[0],
+                'accuracy': results[1],
+                'f1': f1_sc,
+                'AUC': roc_sc,
+            }
+        )
+        score_dict[m_name] = metrics_d
         if args.wandb:
             wandb.run.finish()
 
     score_df = pd.DataFrame.from_dict(score_dict, orient='index').reset_index()
+    score_df = score_df.rename(columns={'index':'model'})
+    logger.info(f"scores:\n{score_df}")
+
     if args.wandb:
         run = wandb.init(project=project_name,
-                         job_type="infer", name="all_evals", config=cfg, reinit=True)
-        #wandb.init() returns a run object, and you can also access the run object via wandb.run:
+                         job_type="infer", name=f"{m_type}_evals", config=cfg, reinit=True)
         assert run is wandb.run
-        score_tb = wandb.Table(score_df)
-        wandb.run.log({'Evaluations': score_tb})
+        score_tb = wandb.Table(data=score_df, columns=score_df.columns)
+        wandb.run.log({f'{m_type}_Evaluations': score_tb})
         wandb.run.finish()
+
 
 def main():
     args = parse_args()
     # SET LOGGING
+    args.output_dir = os.path.join(args.output_dir, args.xp_dir.split('/')[2])
     set_logging(args, 'infer')
     # SET SEED
     set_seed(args)
@@ -83,18 +100,15 @@ def main():
     args.input_shape = (224, 224, 3)
     args.transformer = False
 
-    if args.xp_dir == 'resources/best_models/cnn/128':
+    if args.xp_dir == 'resources/best_models/cnn':
         args.input_shape = (128, 128, 3)
         ds_path = 'resources/datasets/augm_disease_60343_ds_128.h5'
 
-    elif args.xp_dir == 'resources/best_models/cnn/224':
+    elif args.xp_dir == 'resources/best_models/keras_transformers':
         ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
 
-    elif args.xp_dir == 'resources/best_models/lab/128':
+    elif args.xp_dir == 'resources/best_models/lab':
         args.input_shape = (128, 128, 3)
-        ds_path = 'resources/datasets/augm_disease_60343_ds_224.h5'
-
-    elif args.xp_dir == 'resources/best_models/lab/224':
         ds_path = 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
 
     elif args.xp_dir == 'resources/best_models/transformers/VIT':
@@ -131,7 +145,6 @@ def main():
             id2label = json.load(f)
         args.class_names = [str(v) for k, v in id2label.items()]
 
-
     ## Create Dataset
     if args.transformer:
         args.input_shape = (3, 224, 224)
@@ -157,15 +170,15 @@ def main():
     args.nbr_test_batch = int(math.ceil(args.len_test / args.batch_size))
     test_set = prep_ds_input(
         args, test_set, args.len_test, args.input_shape[0:2])
-    for elem, label in test_set.take(1):
-        img = elem[0].numpy()
-        logger.info(f"batch shape is {elem.shape}, type is {elem.dtype}")
-        logger.info(f"image shape is {img.shape}, type: {img.dtype}")
-        logger.info(f"label shape is {label.shape} type: {label.dtype}")
 
     logger.info(f"  ---- Evaluation Parameters ----\n\n{args}\n\n")
     logger.info(f"  ***** Running Evaluation *****")
     logger.info(f"  test_set = {test_set}")
+    for elem, label in test_set.take(1):
+        img = elem[0].numpy()
+        logger.info(f"  batch shape is {elem.shape}, type is {elem.dtype}")
+        logger.info(f"  image shape is {img.shape}, type: {img.dtype}")
+        logger.info(f"  label shape is {label.shape} type: {label.dtype}")
     logger.info(f"  Nbr of class = {args.n_classes}")
     logger.info(f"  Nbr training examples = {args.len_test}")
     logger.info(f"  Batch size = {args.batch_size}")
@@ -185,10 +198,10 @@ def main():
             logger.info(f"Model : {model_dir}")
 
             if os.path.isdir(f'{args.xp_dir}/{model_dir}'):
-                if model_dir == 'ConvNexT_Keras':
+                if model_dir == 'ConvNexTSmall':
                     model = tf.keras.models.load_model(
                         f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects={'f1_m': f1_m, 'LayerScale': LayerScale})
-                elif "lab" in model_dir:
+                elif args.xp_dir.split('/')[-1] == "lab":
                     model = tf.keras.models.load_model(
                         f"{args.xp_dir}/{model_dir}/model-best.h5", custom_objects={'f1_m': f1_m, 'CopyChannels': CopyChannels})
                 else:

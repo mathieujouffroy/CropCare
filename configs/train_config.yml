@@ -4,8 +4,7 @@
 seed: 42
 
 # Images shape
-#input_shape: !!python/tuple [128, 128, 3]
-input_shape: [128, 128, 3]
+input_shape: [224, 224, 3]
 
 # the type of classification we want to implement
 # ['disease', 'plant', 'healthy', 'gen_disease']
@@ -25,17 +24,15 @@ polyloss: False
 # Option to compute advanced metrics while training multiple models
 eval_during_training: False
 # Models to train
-models: ["InceptionV3"]
-#["InceptionV3"]
-# Option to print all warnings related to data processing
-verbose: True
+models: ["lab_two_path_inception_v3", "lab_two_path_inceptionresnet_v2"]
+
 # Option to use wandb for logging
 wandb: True
 # Option to overwrite the content of the output directory
 overwrite_output_dir: True
 
 # the path to the directory of the dataset
-dataset: 'resources/datasets/augm_disease_60343_ds_128.h5'
+dataset: 'resources/datasets/augm_lab_disease_60343_ds_224.h5'
 feature_extractor: 'vit'
 # Option to use pipeline for transformers
 transformer: False

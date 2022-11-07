@@ -10,9 +10,8 @@ batch_size: 32
 
 wandb: False
 
-# the path to the root directory used to store experiments
-xp_dir: 'resources/best_models/cnn/224'
-#xp_dir: 'resources/best_models/transformers/vit'
+# the path to the root directory of our trained models
+xp_dir: 'resources/best_models/keras_transformers'
 
-#output_dir: 'inference/eval_best_models'
-output_dir: 'inference/test'
+# the path to the root directory used to store our evaluations
+output_dir: 'inference/eval_best_models'

@@ -88,7 +88,6 @@ def preprocess_image(tensor_img, mean_arr, std_arr, mode='centering'):
     assert data_format == 'channels_last'
 
     if mode == 'sample_wise_scaling':
-        print("scale pixels between -1 and 1")
         tensor_img /= 127.5
         tensor_img -= 1.
         return tensor_img
@@ -96,18 +95,15 @@ def preprocess_image(tensor_img, mean_arr, std_arr, mode='centering'):
     elif mode == 'scale_to_floats':
         # for faster computation only (does not change spread of pixel values)
         # RGB has already an abounding system of 0-255
-        print("scale pixels between 0 and 1")
         tensor_img /= 255.
         return tensor_img
 
     elif mode == 'scale_std':
-        print("Scale between 0 and 1 and stardardize pixels from train set stats")
         tensor_img /= 255.
         mean = train_mean/255
         std_tensor = train_std/255
 
     else:
-        print("Centering pixels from train_set mean")
         mean = train_mean
         std_tensor = None
 

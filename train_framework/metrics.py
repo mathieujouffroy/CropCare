@@ -100,7 +100,6 @@ def plot_roc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     return roc_score
 
 
-
 def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     """ Plots the precision and recall curves for our classes. """
 
@@ -126,6 +125,7 @@ def plot_prrc_curves(args, y_test, y_pred, classes, model_metrics_dir):
     else:
         plt.savefig(f"{model_metrics_dir}/precision_recall_curves.png")
 
+
 @tf.function(jit_compile=True)
 def eval_and_pred(model, test_dataset):
     results = model.evaluate(test_dataset)
@@ -133,23 +133,18 @@ def eval_and_pred(model, test_dataset):
     y_preds = y_probs.argmax(axis=-1)
     return y_preds
 
+
 def compute_training_metrics(args, model, m_name, test_dataset):
     """ Compute training metrics for model evaluation. """
-
-    model_metrics_dir = os.path.join(args.output_dir, f"{m_name}_metrics")
-
-    if not os.path.exists(model_metrics_dir):
-        os.makedirs(model_metrics_dir)
 
     with open(args.label_map_path) as f:
         CLASS_INDEX = json.load(f)
 
     if args.transformer:
-        #y_probs = model.predict(test_dataset)
-        #y_pred = y_probs.argmax(axis=-1)
         results = eval_and_pred(model, test_dataset)
         f1_sc = None
         roc_score = None
+        #results = model.evaluate(test_dataset)
     else:
         y_test = np.concatenate([y for x, y in test_dataset], axis=0)
         x_test = np.concatenate([x for x, y in test_dataset], axis=0)
@@ -162,7 +157,7 @@ def compute_training_metrics(args, model, m_name, test_dataset):
             truth_label_names = [CLASS_INDEX[str(y)] for y in y_test]
             pred_label_names = [CLASS_INDEX[str(y)] for y in y_pred]
         else:
-            y_pred = np.where(y_pred > 0.5, 1,0)
+            y_pred = np.where(y_pred > 0.5, 1, 0)
             truth_label_names = y_test
             pred_label_names = y_pred
 
@@ -208,12 +203,12 @@ def compute_training_metrics(args, model, m_name, test_dataset):
                 preds=y_pred, y_true=y_test,
                 class_names=list(CLASS_INDEX.values()))})
         else:
-            plt.savefig(f"{model_metrics_dir}/confusion_matrix.png")
+            plt.savefig(f"{args.model_dir}/confusion_matrix.png")
 
         roc_score = plot_roc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                        model_metrics_dir)
+                                    args.model_dir)
         plot_prrc_curves(args, y_test, y_pred, CLASS_INDEX.values(),
-                        model_metrics_dir)
+                         args.model_dir)
 
         logger.info(f"  ======= METRICS =======")
         logger.info(f"  accuracy = {accuracy}")
@@ -223,6 +218,6 @@ def compute_training_metrics(args, model, m_name, test_dataset):
         logger.info(f"  classification_report:\n\n{cr_df}\n\n")
 
         ## MODEL INTERPRETABILITY
-        #save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, model_metrics_dir)
+        save_and_display_gradcam(args, model, m_name, x_test, y_test, 1, args.model_dir)
 
     return results, f1_sc, roc_score

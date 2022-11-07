@@ -32,6 +32,7 @@ def get_imgs_table(model, test_x, test_y, nbr_imgs):
 
     return imgs_table
 
+
 def get_target_layer(model):
     for layer in reversed(model.layers):
         if len(layer.output_shape) == 4:
@@ -39,7 +40,7 @@ def get_target_layer(model):
     raise ValueError("Could not find 4D layer. Cannot apply GradCAM.")
 
 
-def make_gradcam_heatmap(args, model, m_name, img_array, pred_index=None):
+def make_gradcam_heatmap(model, img_array, pred_index=None):
     """
     GRADient-weighted Class Activation Mapping (Grad-CAM)
 
@@ -49,10 +50,11 @@ def make_gradcam_heatmap(args, model, m_name, img_array, pred_index=None):
     in the image for predicting that concept.
     """
 
-    img_array = img_array[np.newaxis, :]
     model.layers[-1].activation = None
     last_4d = get_target_layer(model)
+    img_array = img_array[np.newaxis, :]
     if "Functional" == last_4d.__class__.__name__:
+        print(last_4d.name)
         last_conv = get_target_layer(last_4d)
         grad_model = tf.keras.models.Model(
             [model.inputs], [last_4d.inbound_nodes[0].output_tensors, model.output]
@@ -61,7 +63,7 @@ def make_gradcam_heatmap(args, model, m_name, img_array, pred_index=None):
         # First, we create a model that maps the input image to the activations
         # of the last conv layer as well as the output predictions
         grad_model = tf.keras.models.Model(
-            [model.input], [model.get_layer(last_conv).output, model.output]
+            [model.input], [model.get_layer(last_4d.name).output, model.output]
         )
 
     # Then, we compute the gradient of the top predicted class for our input image
@@ -95,12 +97,32 @@ def make_gradcam_heatmap(args, model, m_name, img_array, pred_index=None):
     return heatmap.numpy()
 
 
-def save_and_display_gradcam(args, model, m_name, x_test, y_test, n_img, model_metrics_dir, alpha=0.4):
-    print(model.summary())
+def display_gradcam(model, img, alpha=0.4):
+    heatmap = make_gradcam_heatmap(model, img)
+    # Rescale heatmap to a range 0-255
+    heatmap = np.uint8(255 * heatmap)
+    # Use jet colormap to colorize heatmap
+    jet = cm.get_cmap("jet")
+    # Use RGB values of the colormap
+    jet_colors = jet(np.arange(256))[:, :3]
+    jet_heatmap = jet_colors[heatmap]
+    # Create an image with RGB colorized heatmap
+    jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
+    jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+    jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
+    # Superimpose the heatmap on original image
+    superimposed_img = jet_heatmap * alpha + img
+    superimposed_img = tf.keras.preprocessing.image.array_to_img(
+        superimposed_img)
+    return superimposed_img, heatmap
+
+
+def save_and_display_gradcam(args, model, m_name, x_test, y_test, n_img, model_metrics_dir):
 
     if args.wandb:
         TABLE_NAME = f"{m_name}_gradcam_vis"
-        columns = ["id", "label", "prediction", "image", "heat_map", "img + gradcam"]
+        columns = ["id", "label", "prediction",
+                   "image", "heat_map", "img + gradcam"]
         grad_cam_table = wandb.Table(columns=columns)
 
     imgs_table = get_imgs_table(model, x_test, y_test, n_img)
@@ -109,28 +131,13 @@ def save_and_display_gradcam(args, model, m_name, x_test, y_test, n_img, model_m
         label = elem[1]
         pred = elem[2]
         img = elem[-1]
-
-        heatmap = make_gradcam_heatmap(args, model, m_name, img)
-        # Rescale heatmap to a range 0-255
-        heatmap = np.uint8(255 * heatmap)
-        # Use jet colormap to colorize heatmap
-        jet = cm.get_cmap("jet")
-        # Use RGB values of the colormap
-        jet_colors = jet(np.arange(256))[:, :3]
-        jet_heatmap = jet_colors[heatmap]
-        # Create an image with RGB colorized heatmap
-        jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
-        jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
-        jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
-        # Superimpose the heatmap on original image
-        superimposed_img = jet_heatmap * alpha + img
-        superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
+        superimposed_img, heatmap = display_gradcam(model, img)
 
         if args.wandb:
             row = [id, label, pred,
-                    wandb.Image(img),
-                    wandb.Image(heatmap),
-                    wandb.Image(superimposed_img)]
+                   wandb.Image(img),
+                   wandb.Image(heatmap),
+                   wandb.Image(superimposed_img)]
             grad_cam_table.add_data(*row)
         else:
             # Display Grad CAM
@@ -139,6 +146,5 @@ def save_and_display_gradcam(args, model, m_name, x_test, y_test, n_img, model_m
             # Save the superimposed image
             superimposed_img.save(f"{model_metrics_dir}/img_{id}.jpg")
 
-
     if args.wandb:
-        wandb.run.log({TABLE_NAME : grad_cam_table})
+        wandb.run.log({TABLE_NAME: grad_cam_table})
