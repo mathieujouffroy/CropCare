@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from cli_utils import plot_multiple_img
+from cli.cli_utils import plot_multiple_img
 import skimage
 
 
@@ -225,7 +225,7 @@ def fill_object(rgb_img, final_mask):
 def color_cast_removal(rgb_img, verbose=False):
     """
     Removes unwanted tint of colors.
-	
+
     Args:
         rgb_img (numpy.ndarray):    RGB image to process
         verbose (bool):             option to display images

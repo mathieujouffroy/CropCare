@@ -368,12 +368,12 @@ def process(examples, feature_extractor):
     examples.update(feature_extractor(examples['img'], ))
     return examples
 
-def transform(example_batch):
-    # Take a list of PIL images and turn them to pixel values
-    inputs = feature_extractor([x for x in example_batch['img']], return_tensors='tf')
-    # Don't forget to include the labels!
-    inputs['labels'] = example_batch['labels']
-    return inputs
+#def transform(example_batch):
+#    # Take a list of PIL images and turn them to pixel values
+#    inputs = feature_extractor([x for x in example_batch['img']], return_tensors='tf')
+#    # Don't forget to include the labels!
+#    inputs['labels'] = example_batch['labels']
+#    return inputs
 
 def create_hf_ds(images, labels, feature_extractor, class_names):
     """" Creates a dataset with transformer feature exctractor """
@@ -389,8 +389,8 @@ def create_hf_ds(images, labels, feature_extractor, class_names):
         {"img": images, "label": labels}, features=features)
     ds = ds.rename_column("label", "labels")
 
-    #ds = ds.map(lambda x: process(x, feature_extractor), batched=True)#, writer_batch_size=10)
-    ds = ds.with_transform(transform)
+    ds = ds.map(lambda x: process(x, feature_extractor), batched=True)#, writer_batch_size=10)
+    #ds = ds.with_transform(transform)
 
     ds = ds.shuffle(seed=42)
     return ds

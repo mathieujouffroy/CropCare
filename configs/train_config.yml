@@ -38,8 +38,7 @@ feature_extractor: 'vit'
 transformer: False
 
 # Output directory where the model checkpoints will be written
-output_dir: 'experiments/cnn-comp'  # -> all augmented
-#output_dir: 'experiments/models-comp'  # -> all augmented
+output_dir: 'experiments/cnn-comp'
 
 mean_arr: [118.94, 124.72, 104.59]
 std_arr: [49.35, 42.97, 54.13]

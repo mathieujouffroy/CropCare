@@ -3,9 +3,9 @@ import json
 import wandb
 import random
 import numpy as np
-from cli_utils import bcolors, strawb
-from dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
-from leaf_segmentation import segment_split_set
+from cli.cli_utils import bcolors, strawb
+from cli.dataloader import PlantDataset, store_hdf5, create_transformer_ds, resize_images
+from cli.leaf_segmentation import segment_split_set
 from sklearn.model_selection import train_test_split
 
 

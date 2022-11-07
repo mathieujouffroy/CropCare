@@ -6,6 +6,7 @@ import gradio as gr
 from train_framework.metrics import f1_m
 from train_framework.models import LayerScale
 from train_framework.interpretability import display_gradcam
+from cli.leaf_segmentation import back_segmentation
 
 ### GRADIO INTERFACE WITH PREDICTION CAM / GRADCAM / SALIENCY MAPS
 dependencies = {
@@ -22,9 +23,9 @@ def resize_img(img, shape):
 
 
 def classify_image(image, label, model, remove_bg=False):
-    print(f"model: {model}")
-    print(label)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    if remove_bg:
+        image = back_segmentation(image, lightness=True, contrast=True)
     image = tf.convert_to_tensor(image)
     image = tf.cast(image, tf.float32)
 
@@ -47,7 +48,7 @@ def classify_image(image, label, model, remove_bg=False):
     y_probs = clf.predict(input).flatten()
     y_pred = np.argmax(y_probs, axis=-1)
     confidences = {CLASS_INDEX[str(i)]: float(y_probs[i]) for i in range(38)}
-    superimposed_img, heatmap = display_gradcam(clf, image, alpha=0.6)
+    superimposed_img, heatmap = display_gradcam(clf, image, alpha=0.5)
     return confidences, superimposed_img
 
 

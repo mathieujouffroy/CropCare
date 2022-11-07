@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from cli_utils import plot_multiple_img
-from image_preprocessing import *
+from cli.cli_utils import plot_multiple_img
+from cli.image_preprocessing import *
 
 
 def distance_transform_fb(rgb_img, hsv_mask, fill_sbg=True, verbose=False):
