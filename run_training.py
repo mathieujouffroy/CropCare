@@ -98,7 +98,6 @@ def main():
     ## Create Dataset
     if args.transformer:
         args.input_shape = [224, 224, 3]
-        img_size = (args.input_shape[0:2])
 
         if args.feature_extractor == "vit":
             ds_path = "../block_storage/transformers/vit"
@@ -133,7 +132,6 @@ def main():
     else:
         # Load the dataset
         assert os.path.isfile(args.dataset)
-        img_size = args.input_shape[0:2]
         X_train, y_train = load_split_hdf5(args.dataset, 'train')
         X_valid, y_valid = load_split_hdf5(args.dataset, 'valid')
         train_set = tf.data.Dataset.from_tensor_slices((X_train, y_train))
@@ -151,6 +149,7 @@ def main():
     del y_train
     gc.collect()
 
+    img_size = (args.input_shape[0:2])
     train_set = prep_ds_input(args, train_set, args.len_train, img_size)
     valid_set = prep_ds_input(args, valid_set, args.len_valid, img_size)
 

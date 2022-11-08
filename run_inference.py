@@ -162,8 +162,6 @@ def main():
 
     ## Create Dataset
     if args.transformer:
-        args.input_shape = (3, 224, 224)
-
         test_set = load_from_disk(f'{ds_path}/test')
         args.len_test = test_set.num_rows
         data_collator = DefaultDataCollator(return_tensors="tf")
