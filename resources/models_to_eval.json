@@ -26,5 +26,6 @@
 
     "TFConvNextModel":{"mode":null, "t_type":"transformer"},
     "TFViTModel":{"mode":null, "t_type":"transformer"},
-    "TFSwinModel":{"mode":null, "t_type":"transformer"}
+    "TFSwinModel":{"mode":null, "t_type":"transformer"},
+    "TFCvtModel":{"mode":null, "t_type":"transformer"}
 }

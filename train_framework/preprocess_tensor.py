@@ -42,7 +42,7 @@ def to_vector(img, label):
     label = tf.expand_dims(label, axis=1)
     return img, label
 
-@tf.function
+
 def prep_ds_input(args, ds, set_len, size):
     """ Preprocssing function that maps the relevant preprocessing steps. """
     N_CPUS = multiprocessing.cpu_count()

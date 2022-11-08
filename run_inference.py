@@ -203,7 +203,7 @@ def main():
         model_dir = args.xp_dir.split('/')[-1]
         logger.info(f"Model : {model_dir}")
         model_path = f"{args.xp_dir}/model-best.h5"
-        size = os.path.getsize(model_path)
+        size = os.path.getsize(model_path)/(1024*1024)
         logger.info(f"Model Size: {size:.2f} MB")
         model = tf.keras.models.load_model(
             model_path, custom_objects={"AdamWeightDecay": AdamWeightDecay})
@@ -215,7 +215,7 @@ def main():
 
             if os.path.isdir(f'{args.xp_dir}/{model_dir}'):
                 model_path = f"{args.xp_dir}/{model_dir}/model-best.h5"
-                size = os.path.getsize(model_path)
+                size = os.path.getsize(model_path)/(1024*1024)
                 logger.info(f"Model Size: {size:.2f} MB")
                 if model_dir == 'ConvNexTSmall':
                     model = tf.keras.models.load_model(

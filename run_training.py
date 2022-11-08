@@ -103,7 +103,7 @@ def main():
             ds_path = "../block_storage/transformers/vit"
         elif args.feature_extractor == "swin":
             ds_path = "../block_storage/transformers/swin"
-        elif args.feature_extractor == "convnext":
+        elif args.feature_extractor in ["convnext", "cvt"]:
             ds_path = "../block_storage/transformers/convnext"
 
         train_set = load_from_disk(f'{ds_path}/train')

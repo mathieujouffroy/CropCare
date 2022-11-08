@@ -10,7 +10,7 @@ from tensorflow.keras.applications import (
 		VGG16, DenseNet201, ConvNeXtSmall, EfficientNetV2B3, Xception,
 		InceptionResNetV2, InceptionV3, ResNet50V2, DenseNet201
 	)
-from transformers import TFConvNextModel, TFSwinModel, TFViTModel
+from transformers import TFConvNextModel, TFSwinModel, TFViTModel, TFCvtModel
 from train_framework.custom_inception_model import lab_two_path_inceptionresnet_v2, lab_two_path_inception_v3
 from train_framework.preprocess_tensor import preprocess_image
 from train_framework.interpretability import get_target_layer
@@ -428,6 +428,9 @@ def set_model(args, model, mode):
     elif model == 'TFSwinModel':
         model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
         mode = None
+    elif model == "TFCvtModel":
+        model = TFCvtModel.from_pretrained("microsoft/cvt-13")
+        mode = None
     return (model, mode)
 
 
@@ -514,7 +517,6 @@ def get_models(args):
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
         if params['t_type'] == "finetune":
-            weights = None
             mode = None
             if name.startswith('f_'):
                 name = name[2:]
