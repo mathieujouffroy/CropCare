@@ -91,16 +91,16 @@ def main():
             args.label_map_path = 'resources/label_maps/general_diseases_label_map.json'
 
         with open(args.label_map_path) as f:
-            id2label = json.load(f)
+            args.id2label = json.load(f)
 
-        args.class_names = [str(v) for k, v in id2label.items()]
+        args.class_names = [str(v) for k, v in args.id2label.items()]
 
     logger.info(f"  Class names = {args.class_names}")
 
     ## Create Dataset
     if args.transformer:
         args.input_shape = [224, 224, 3]
-
+        args.label2id = {v: k for k, v in args.id2label.items()}
         if args.feature_extractor == "vit":
             ds_path = "../block_storage/transformers/vit"
         elif args.feature_extractor == "swin":

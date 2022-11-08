@@ -419,22 +419,10 @@ def set_model(args, model, mode):
     elif model == 'ConvNeXtSmall':
         model = ConvNeXtSmall
         mode = None
-    elif model == 'TFConvNextModel':
-        model = TFConvNextModel.from_pretrained("facebook/convnext-tiny-224")
-        mode = None
-    elif model == 'TFViTModel':
-        model = TFViTModel.from_pretrained("google/vit-base-patch16-224")
-        mode = None
-    elif model == 'TFSwinModel':
-        model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
-        mode = None
-    elif model == "TFCvtModel":
-        model = TFCvtModel.from_pretrained("microsoft/cvt-13")
-        mode = None
     return (model, mode)
 
 
-def prepare_model(args, model, mode, t_type):
+def prepare_model(args, model, name, mode, t_type):
     """
     Prepare the model
 
@@ -493,18 +481,32 @@ def prepare_model(args, model, mode, t_type):
         #p_inputs = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
         # get last layer output, retrieve hidden states
         #x = model.vit(p_inputs)[0]
-        x = model.vit(inputs)[0]
+        
         #x = model.convnext(inputs)[1]
-        #x = model.swin(inputs)[1]
+        if name == 'TFViT':
+            x = model.vit(inputs)[0]
+            # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
+            x = x[:, 0, :]
+
+        elif name == 'TFSwin':
+            x = model.swin(inputs)[1]
+
+        elif name == 'TFConvNexT':
+            x = model.convnext(inputs)[1]
+            
+        elif name == "TFCvt":
+            x = model.cvt(inputs)[0]
+            x = tf.reduce_mean(x, axis=1)
+            
         outputs = keras.layers.Dense(
-            args.n_classes, activation='softmax', name='predictions')(x[:, 0, :]) # (convnext,swin)-> x / (vit[:, 0, :]) -> x[:, 0, :]
-        # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
+            args.n_classes, activation='softmax', name='predictions')(x)
+        
         # hidden_state -> shape : (batch_size, sequence_length, hidden_size)
         model = keras.Model(inputs, outputs)
 
     return model
 
-
+    
 def get_models(args):
     """
     Get the models for the training and testing.
@@ -516,14 +518,25 @@ def get_models(args):
     d_subset = {key: model_d[key] for key in to_test}
     models_to_test = OrderedDict()
     for name, params in d_subset.items():
-        if params['t_type'] == "finetune":
+        if args.transformer:
             mode = None
-            if name.startswith('f_'):
-                name = name[2:]
-            model = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5",custom_objects={'f1_m': f1_m})
+            if name == 'TFViT':
+                model = TFViTModel.from_pretrained("google/vit-base-patch16-224")
+            elif name == 'TFSwin':
+                model = TFSwinModel.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
+            elif name == 'TFConvNexT':
+                model = TFConvNextModel.from_pretrained("facebook/convnext-tiny-224")
+            elif name == "TFCvt":
+                model = TFCvtModel.from_pretrained("microsoft/cvt-13")
         else:
-            model, mode = set_model(args, name, params['mode'])
+            if params['t_type'] == "finetune":
+                mode = None
+                if name.startswith('f_'):
+                    name = name[2:]
+                model = tf.keras.models.load_model(f"resources/best_models/cnn/{name}/model-best.h5",custom_objects={'f1_m': f1_m})
+            else:
+                model, mode = set_model(args, name, params['mode'])
 
-        models_to_test[name] = prepare_model(args, model, mode, params['t_type'])
+        models_to_test[name] = prepare_model(args, model, name, mode, params['t_type'])
 
     return models_to_test

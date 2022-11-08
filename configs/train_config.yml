@@ -33,16 +33,16 @@ wandb: True
 overwrite_output_dir: True
 
 # Models to train
-models: ["seg_EfficientNetV2B3"]
+models: ["TFCvt"]
 
 # Option to use pipeline for transformers
-transformer: False
+transformer: True
 # If you are training a transformer model, apply the appropriate feature extractor
 # 'vit', 'convnext', 'swin', 'cvt'
-feature_extractor: 'vit'
+feature_extractor: 'cvt'
 
 # the path to the directory of the dataset
-dataset: 'resources/datasets/segm_disease_60343_ds_128.h5'
+dataset: 'resources/datasets/augm_disease_60343_ds_128.h5'
 
 # Output directory where the model checkpoints will be written
 output_dir: 'experiments/fine-tune'
