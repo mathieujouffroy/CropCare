@@ -26,6 +26,8 @@ The evaluation configuration parameters are in the file configs/infer_config.yml
 The models you can train are in the file resources/models_to_eval.json
 <br>
 <br>
+Training script:
+<br>
 ```bash
 python run_training.py --config configs/train_config.yml
 ```
