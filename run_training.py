@@ -49,6 +49,8 @@ def main():
     else:
         # Set relevant loss and metrics to evaluate
         if args.transformer:
+            if args.fp16:
+                tf.keras.mixed_precision.set_global_policy("mixed_float16")
             args.n_epochs = 6
             args.learning_rate = 2e-5
             args.loss = tf.keras.losses.SparseCategoricalCrossentropy(

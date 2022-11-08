@@ -17,6 +17,9 @@ optimizer: 'adam'
 learning_rate: 0.001
 lr_decay_rate: 0.1
 
+# Option to used mixed precision, be sur that your GPU will not benefit from this -> (compute capability > 6)
+fp16: False
+
 # Option to use class weights for imbalanced dataset
 class_weights: True
 # Option to use PolyLoss as loss function

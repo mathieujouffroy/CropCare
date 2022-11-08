@@ -143,6 +143,8 @@ def main():
         args.class_names = ['healthy', 'not_healthy']
     else:
         if args.transformer:
+            if args.fp16:
+                tf.keras.mixed_precision.set_global_policy("mixed_float16")
             args.loss = tf.keras.losses.SparseCategoricalCrossentropy()
         else:
             args.loss = tf.keras.losses.CategoricalCrossentropy()

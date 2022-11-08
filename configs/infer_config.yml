@@ -10,6 +10,9 @@ batch_size: 32
 
 wandb: False
 
+# Option to used mixed precision, be sur that your GPU will not benefit from this -> (compute capability > 6)
+fp16: False
+
 # the path to the root directory of our trained models
 # "resources/best_models/{model_type}" where model_type can be either of
 # 'cnn', 'lab', 'transformers', 'keras_transformers'
