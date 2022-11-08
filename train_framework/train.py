@@ -80,10 +80,10 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         elif args.optimizer == 'adam':
             optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
 
-    if args.transformer:
-        model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics, jit_compile=True)
-    else:
-        model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
+    #if args.transformer:
+    #    model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics, jit_compile=True)
+    #else:
+    model.compile(loss=args.loss, optimizer=optimizer, metrics=args.metrics)
 
     # Define callbacks for debugging and progress tracking
     checks_path = os.path.join(args.model_dir, 'best-checkpoint')
@@ -98,7 +98,7 @@ def train_model(args, m_name, model, train_set, valid_set, class_weights):
         wandb.define_metric("val_loss", summary="min")
         wandb.define_metric("val_f1_m", summary="max")
     else:
-        callback_lst.append(tf.keras.callbacks.TensorBoard(histogram_freq=1, log_dir=args.model_dir))
+        callback_lst.append(tf.keras.callbacks.TensorBoard(histogram_freq=1, log_dir=checks_path))
 
     logger.info("\n\n")
     logger.info(f"  =========== TRAINING MODEL {m_name} ===========")

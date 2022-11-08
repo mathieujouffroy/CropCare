@@ -10,7 +10,7 @@ from tensorflow.keras.applications import (
 		VGG16, DenseNet201, ConvNeXtSmall, EfficientNetV2B3, Xception,
 		InceptionResNetV2, InceptionV3, ResNet50V2, DenseNet201
 	)
-from transformers import TFConvNextModel, TFSwinModel, TFViTModel, TFCvtModel
+from transformers import TFConvNextModel, TFSwinModel, TFViTModel, TFCvtModel, shape_list
 from train_framework.custom_inception_model import lab_two_path_inceptionresnet_v2, lab_two_path_inception_v3
 from train_framework.preprocess_tensor import preprocess_image
 from train_framework.interpretability import get_target_layer
@@ -479,10 +479,7 @@ def prepare_model(args, model, name, mode, t_type):
         print(f"input shape: {input_shape}")
         inputs = tfl.Input(shape=input_shape, name='pixel_values', dtype='float32')
         #p_inputs = preprocess_image(inputs, args.mean_arr, args.std_arr, mode)
-        # get last layer output, retrieve hidden states
-        #x = model.vit(p_inputs)[0]
-        
-        #x = model.convnext(inputs)[1]
+
         if name == 'TFViT':
             x = model.vit(inputs)[0]
             # we want to get the initial embeddig output [CLS] -> index 0 (sequence_length)
@@ -493,9 +490,16 @@ def prepare_model(args, model, name, mode, t_type):
 
         elif name == 'TFConvNexT':
             x = model.convnext(inputs)[1]
-            
+
         elif name == "TFCvt":
             x = model.cvt(inputs)[0]
+            #cls_token = outputs[1]
+            #x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(cls_token)
+            #x = tf.reduce_mean(x, axis=1)
+            batch_size, num_channels, height, width = shape_list(x)
+            x = tf.reshape(x, shape=(batch_size, num_channels, height * width))
+            x = tf.transpose(x, perm=(0, 2, 1))
+            x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(x)
             x = tf.reduce_mean(x, axis=1)
             
         outputs = keras.layers.Dense(
