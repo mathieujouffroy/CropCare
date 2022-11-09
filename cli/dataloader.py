@@ -5,6 +5,7 @@ import h5py
 import json
 import random
 import datasets
+import multiprocessing
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -375,6 +376,8 @@ def process(examples, feature_extractor):
 
 def create_hf_ds(images, labels, feature_extractor, class_names):
     """" Creates a dataset with transformer feature exctractor """
+
+    N_CPUS = multiprocessing.cpu_count()
     features = datasets.Features({
         "img": datasets.Image(),
         # ClassLabel feature type is for single-label multi-class classification
@@ -387,7 +390,7 @@ def create_hf_ds(images, labels, feature_extractor, class_names):
         {"img": images, "label": labels}, features=features)
     ds = ds.rename_column("label", "labels")
 
-    ds = ds.map(lambda x: process(x, feature_extractor), batched=True)#, writer_batch_size=10)
+    ds = ds.map(lambda x: process(x, feature_extractor), num_parallel_calls=N_CPUS, batched=True)
     #ds = ds.with_transform(transform)
 
     ds = ds.shuffle(seed=42)

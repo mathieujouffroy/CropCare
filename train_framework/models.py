@@ -492,15 +492,15 @@ def prepare_model(args, model, name, mode, t_type):
             x = model.convnext(inputs)[1]
 
         elif name == "TFCvt":
-            x = model.cvt(inputs)[0]
-            #cls_token = outputs[1]
-            #x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(cls_token)
-            #x = tf.reduce_mean(x, axis=1)
-            batch_size, num_channels, height, width = shape_list(x)
-            x = tf.reshape(x, shape=(batch_size, num_channels, height * width))
-            x = tf.transpose(x, perm=(0, 2, 1))
-            x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(x)
+            #x = model.cvt(inputs)[0]
+            cls_token = model.cvt(inputs)[1]
+            x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(cls_token)
             x = tf.reduce_mean(x, axis=1)
+            #batch_size, num_channels, height, width = shape_list(x)
+            #x = tf.reshape(x, shape=(batch_size, num_channels, height * width))
+            #x = tf.transpose(x, perm=(0, 2, 1))
+            #x = tf.keras.layers.LayerNormalization(epsilon=1e-5, name="layernorm")(x)
+            #x = tf.reduce_mean(x, axis=1)
             
         outputs = keras.layers.Dense(
             args.n_classes, activation='softmax', name='predictions')(x)
