@@ -1,5 +1,5 @@
 
-# PopYourCrop
+# CropCare
 Crop Disease Detection
 
 ## CLI
