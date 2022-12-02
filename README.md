@@ -1,29 +1,37 @@
 
-# CropCare
-Crop Disease Detection
+# Crop Disease Detection
+
+Framework to train different computer vision models in Tensorflow for crop disease classification.
 
 ## CLI
 Command Line Interface used to generate the dataset and plot class distribution.
 <br>
 <br>
 You have the possibility to choose between 4 types of labels:<br>
+
 - plants
 - diseases
 - general_diseases
 - healthy (binary)
 <br>
-You can also remove the background in the images with different techniques.<br>
+You can also remove the background in the images with different techniques:<br>
+
+- Watershed<br>
+- HSV filters & Morphological transforms<br>
+- K-Means Clustering ...<br>
 <br>
 
 ```bash
-python cli/cli.py path_images_folder
+python cli/cli.py path_to_images_folder
 ```
 
-## Train_framework
-Script to train different Computer Vision models on a given classification task (multiclass or binary).<br>
-The training configuration parameters are in the file configs/train_config.yml.<br>
-The evaluation configuration parameters are in the file configs/infer_config.yml.<br>
-The models you can train are in the file resources/models_to_eval.json
+## Training framework
+Framework to train different computer vision models (CNN & transformers) in Tensorflow for crop disease classification.<br>
+The classification task can either be multiclass or binary.<br>
+<br>
+Training parameters are in the file `configs/train_config.yml`.<br>
+Evaluation parameters are in the file `configs/infer_config.yml`.<br>
+Available models for training are in the file `resources/models_to_eval.json`
 <br>
 <br>
 Training script:
