@@ -1,7 +1,7 @@
 
 # Crop Disease Detection
 
-Framework to train different computer vision models in Tensorflow for crop disease classification.
+Crop disease classification for indoor farming.
 
 ## CLI
 Command Line Interface used to generate the dataset and plot class distribution.
